@@ -1,0 +1,43 @@
+Changed files: previous changed-files pack -> Phase 6
+=======================================================
+Compared every file in the uploaded competitor-intelligence.zip — which
+was the changed-files pack from last time (Phases 3-5) — against the
+current project (Phase 6: AI analysis). 12 files differ: 7 modified,
+5 new. Nothing was deleted.
+
+Files that existed before Phase 6 but were unchanged in Phases 3-5 (auth
+code, config, middleware, the (auth) pages, etc.) are NOT in this pack —
+they did not change in Phase 6 either. Only the Phase 6 delta is here.
+
+How to use: extract this zip over your project folder
+(C:\Users\HP\OneDrive\Desktop\competitor-intelligence-phase2\) and choose
+"Replace the files in the destination". Your backend/.env is NOT in this
+pack, so it is never overwritten. No `npm install` needed for Phase 6
+(no new packages). Restart both servers. To actually use the Analyse
+button, add OPENAI_API_KEY to backend/.env first (see README).
+
+MODIFIED (7)
+------------
+README.md
+backend/.env.example                  (documents OPENAI_API_KEY / OPENAI_MODEL)
+backend/src/config/env.ts             (OpenAI settings)
+backend/src/routes/competitors.ts     (POST /:id/analyze, GET /:id/analyses, GET /:id/analyses/:analysisId)
+frontend/app/(dashboard)/competitors/[id]/page.tsx   (AI analysis section)
+frontend/app/(dashboard)/dashboard/page.tsx          (Next: Phase 7)
+frontend/types/index.ts               (Analysis + AnalysisSource types)
+
+NEW (5)
+-------
+backend/src/models/Analysis.ts        (Analysis model: summary, implications,
+                                       strengths, weaknesses, suggested
+                                       responses, talking points, confidence,
+                                       sources, model, token usage)
+backend/src/ai/openaiClient.ts        (plain-fetch OpenAI client, no SDK dep)
+backend/src/ai/analyzer.ts            (prompt builder + Zod validation of the
+                                       structured JSON response)
+backend/src/controllers/analysisController.ts
+frontend/services/analysis.ts         (analyse + listAnalyses calls)
+
+Notes:
+- No .env file is included (only the .env.example template).
+- No node_modules, .next, or dist.
