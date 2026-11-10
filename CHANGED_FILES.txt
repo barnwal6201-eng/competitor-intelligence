@@ -1,0 +1,69 @@
+Changed files: phase2 zip -> current workspace (Phase 5)
+============================================================
+Compared every file in competitor-intelligence-phase2.zip against the
+current project (Phases 3 + 4 + 5, plus the Next.js 16 fix).
+36 files differ: 7 modified, 29 new. Nothing was deleted.
+
+How to use: extract this zip over your project folder
+(C:\Users\HP\OneDrive\Desktop\competitor-intelligence-phase2\) and choose
+"Replace the files in the destination". Your backend/.env is NOT in this
+pack, so it is never overwritten. After copying, run `npm install` once
+in backend (Phase 4 added axios + cheerio) and restart both servers.
+
+MODIFIED (7) — existed in phase2, content changed
+-------------------------------------------------
+README.md
+backend/package.json                    (Phase 4: axios + cheerio added)
+backend/package-lock.json               (Phase 4: axios + cheerio added)
+backend/src/app.ts                      (Phase 3/4/5: new routes mounted)
+frontend/app/(dashboard)/dashboard/page.tsx   (Phases 3/4/5: links + next-step text)
+frontend/app/(dashboard)/layout.tsx     (Next.js 16 fix: async cookies())
+frontend/types/index.ts                 (Phases 3/4/5: new types)
+
+NEW (29)
+--------
+Phase 3 — competitor CRUD:
+  backend/src/controllers/competitorController.ts
+  backend/src/routes/competitors.ts
+  backend/src/validators/competitor.ts
+  frontend/app/(dashboard)/competitors/CompetitorForm.tsx
+  frontend/app/(dashboard)/competitors/page.tsx
+  frontend/app/(dashboard)/competitors/new/page.tsx
+  frontend/app/(dashboard)/competitors/[id]/page.tsx
+  frontend/app/(dashboard)/competitors/[id]/edit/page.tsx
+  frontend/services/competitors.ts
+
+Phase 4 — scraping engine:
+  backend/src/models/Snapshot.ts
+  backend/src/controllers/scanController.ts
+  backend/src/scrapers/index.ts
+  backend/src/scrapers/fetcher.ts
+  backend/src/scrapers/pricingScraper.ts
+  backend/src/scrapers/changelogScraper.ts
+  backend/src/scrapers/careersScraper.ts
+  backend/src/scrapers/reviewsScraper.ts
+  backend/src/scrapers/common.ts
+  backend/src/scrapers/types.ts
+  backend/src/scrapers/playwrightFetcher.ts
+  backend/src/types/playwright.d.ts
+  frontend/services/scans.ts
+
+Phase 5 — change detection:
+  backend/src/models/Change.ts
+  backend/src/changes/detector.ts
+  backend/src/controllers/changeController.ts
+  backend/src/routes/changes.ts
+  frontend/services/changes.ts
+  frontend/components/ChangeCard.tsx
+  frontend/app/(dashboard)/intelligence/page.tsx
+
+Notes:
+- frontend/app/(dashboard)/competitors/[id]/page.tsx and [id]/edit/page.tsx
+  are listed under Phase 3/4 as new files, but they were ALSO changed by the
+  Next.js 16 fix (useParams() instead of the params prop) and, for the
+  detail page, by Phase 5 (Detected changes section). The copies in this
+  pack already include all of that.
+- frontend/app/(dashboard)/layout.tsx is the Next.js 16 fix (async
+  DashboardLayout with `await cookies()`). It matches the manual fix you
+  already applied on your machine.
+- No .env file is included. No node_modules, .next, or dist.

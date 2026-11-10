@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCurrentUser, logoutUser } from "@/services/auth";
 import type { AuthUser } from "@/types";
@@ -51,11 +52,25 @@ export default function DashboardPage() {
         <h2 className="text-lg font-medium">Your workspace is ready</h2>
         <p className="mt-2 text-neutral-700">
           Authentication (Phase 2) is complete: your account, your organization, and this
-          protected page are all verified against the backend. Competitor management,
-          scraping, and battlecards come in the next phases — nothing is faked here.
+          protected page are all verified against the backend. Scraping (Phase 4) is
+          live too — open a competitor and press Scan now to snapshot its pages.
+          Change detection (Phase 5) compares each new snapshot with the last one
+          and lists what moved. Battlecards come in the next phases — nothing is
+          faked here.
+        </p>
+        <p className="mt-3">
+          <Link href="/competitors" className="font-medium text-indigo-700 hover:underline">
+            Manage your competitors →
+          </Link>
+        </p>
+        <p className="mt-2">
+          <Link href="/intelligence" className="font-medium text-indigo-700 hover:underline">
+            View the intelligence feed →
+          </Link>
         </p>
         <p className="mt-3 text-sm text-neutral-500">
-          Next: Phase 3 — add, edit, and list competitors for {user.organization.name}.
+          Next: Phase 6 — AI analysis of the detected changes
+          for {user.organization.name}.
         </p>
       </section>
     </main>
