@@ -5,6 +5,8 @@ import healthRouter from "./routes/health";
 import authRouter from "./routes/auth";
 import competitorsRouter from "./routes/competitors";
 import changesRouter from "./routes/changes";
+import battlecardsRouter from "./routes/battlecards";
+import dashboardRouter from "./routes/dashboard";
 
 const app = express();
 
@@ -17,6 +19,8 @@ app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/competitors", competitorsRouter);
 app.use("/api/changes", changesRouter);
+app.use("/api/battlecards", battlecardsRouter);
+app.use("/api/dashboard", dashboardRouter);
 
 app.use((_req, res) => {
   res.status(404).json({ error: "Not found" });
