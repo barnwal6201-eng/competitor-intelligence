@@ -3,6 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { btnPrimary, inputClass, labelClass } from "@/components/ui";
 import type { CompetitorInput, MonitoringFrequency } from "@/types";
 
 const competitorFormSchema = z.object({
@@ -18,11 +19,12 @@ const competitorFormSchema = z.object({
 
 type CompetitorFormValues = z.infer<typeof competitorFormSchema>;
 
-function field(label: string, error: string | undefined, input: React.ReactNode) {
+function field(label: string, error: string | undefined, input: React.ReactNode, hint?: string) {
   return (
     <div>
-      <label className="text-sm font-medium">{label}</label>
+      <label className={labelClass}>{label}</label>
       {input}
+      {hint && !error ? <p className="mt-1 text-xs text-slate-500">{hint}</p> : null}
       {error && <p className="mt-1 text-sm text-red-700">{error}</p>}
     </div>
   );
@@ -74,65 +76,78 @@ export default function CompetitorForm({
     });
   }
 
-  const inputClass = "mt-1 w-full rounded-md border border-neutral-300 px-3 py-2";
-
   return (
-    <form onSubmit={handleSubmit(submit)} className="mt-6 space-y-4">
-      {field(
-        "Company name *",
-        errors.companyName?.message,
-        <input id="companyName" type="text" placeholder="e.g. Asana" {...register("companyName")} className={inputClass} />
-      )}
-      {field(
-        "Website URL *",
-        errors.websiteUrl?.message,
-        <input id="websiteUrl" type="url" placeholder="https://asana.com" {...register("websiteUrl")} className={inputClass} />
-      )}
-      {field(
-        "Pricing page URL",
-        errors.pricingPageUrl?.message,
-        <input id="pricingPageUrl" type="url" placeholder="https://asana.com/pricing" {...register("pricingPageUrl")} className={inputClass} />
-      )}
-      {field(
-        "Changelog URL",
-        errors.changelogUrl?.message,
-        <input id="changelogUrl" type="url" placeholder="https://asana.com/changelog" {...register("changelogUrl")} className={inputClass} />
-      )}
-      {field(
-        "Careers page URL",
-        errors.careersPageUrl?.message,
-        <input id="careersPageUrl" type="url" placeholder="https://asana.com/jobs" {...register("careersPageUrl")} className={inputClass} />
-      )}
-      {field(
-        "Review source URL",
-        errors.reviewSourceUrl?.message,
-        <input id="reviewSourceUrl" type="url" placeholder="https://www.g2.com/products/asana/reviews" {...register("reviewSourceUrl")} className={inputClass} />
-      )}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor="monitoringFrequency" className="text-sm font-medium">How often to check</label>
-          <select id="monitoringFrequency" {...register("monitoringFrequency")} className={inputClass}>
-            <option value="hourly">Hourly</option>
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-          </select>
+    <form onSubmit={handleSubmit(submit)} className="space-y-8">
+      <section>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Company</h2>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          {field(
+            "Company name *",
+            errors.companyName?.message,
+            <input id="companyName" type="text" placeholder="e.g. Asana" {...register("companyName")} className={inputClass} />
+          )}
+          {field(
+            "Website URL *",
+            errors.websiteUrl?.message,
+            <input id="websiteUrl" type="url" placeholder="https://asana.com" {...register("websiteUrl")} className={inputClass} />
+          )}
         </div>
-        <div className="flex items-end pb-2">
-          <label className="flex items-center gap-2 text-sm font-medium">
-            <input type="checkbox" {...register("isMonitoringEnabled")} className="h-4 w-4" />
-            Monitoring enabled
-          </label>
+      </section>
+
+      <section>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Pages to watch</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Only the company name and website are required. Add the pages below to have them scanned — you can add them later.
+        </p>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          {field(
+            "Pricing page URL",
+            errors.pricingPageUrl?.message,
+            <input id="pricingPageUrl" type="url" placeholder="https://asana.com/pricing" {...register("pricingPageUrl")} className={inputClass} />
+          )}
+          {field(
+            "Changelog URL",
+            errors.changelogUrl?.message,
+            <input id="changelogUrl" type="url" placeholder="https://asana.com/changelog" {...register("changelogUrl")} className={inputClass} />
+          )}
+          {field(
+            "Careers page URL",
+            errors.careersPageUrl?.message,
+            <input id="careersPageUrl" type="url" placeholder="https://asana.com/jobs" {...register("careersPageUrl")} className={inputClass} />
+          )}
+          {field(
+            "Review source URL",
+            errors.reviewSourceUrl?.message,
+            <input id="reviewSourceUrl" type="url" placeholder="https://www.g2.com/products/asana/reviews" {...register("reviewSourceUrl")} className={inputClass} />
+          )}
         </div>
-      </div>
-      <p className="text-sm text-neutral-500">
-        Only the company name and website are required. The other URLs are the pages
-        this tool will watch in the scraping phase — you can add them later.
-      </p>
-      {serverError && <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">{serverError}</p>}
+      </section>
+
+      <section>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Monitoring</h2>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="monitoringFrequency" className={labelClass}>How often to check</label>
+            <select id="monitoringFrequency" {...register("monitoringFrequency")} className={inputClass}>
+              <option value="hourly">Hourly</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+            </select>
+          </div>
+          <div className="flex items-end pb-1">
+            <label className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700">
+              <input type="checkbox" {...register("isMonitoringEnabled")} className="h-4 w-4 accent-indigo-600" />
+              Monitoring enabled
+            </label>
+          </div>
+        </div>
+      </section>
+
+      {serverError && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{serverError}</p>}
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full rounded-md bg-indigo-700 px-4 py-2 font-medium text-white disabled:opacity-50"
+        className={`${btnPrimary} w-full sm:w-auto`}
       >
         {isSubmitting ? "Saving…" : submitLabel}
       </button>

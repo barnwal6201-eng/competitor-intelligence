@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import CompetitorForm from "../../CompetitorForm";
 import { getCompetitor, updateCompetitor } from "@/services/competitors";
+import { BackLink, Card, PageHeader } from "@/components/ui";
 import type { Competitor, CompetitorInput } from "@/types";
 
 // The id comes from useParams() instead of the `params` prop: in Next.js
@@ -43,30 +44,34 @@ export default function EditCompetitorPage() {
 
   if (loadError) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-12">
-        <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">{loadError}</p>
-        <Link href="/competitors" className="mt-4 inline-block font-medium text-indigo-700">
-          ← Back to competitors
-        </Link>
-      </main>
+      <div>
+        <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{loadError}</p>
+        <BackLink href="/competitors">
+          <ArrowLeft className="h-4 w-4" /> Back to competitors
+        </BackLink>
+      </div>
     );
   }
   if (!competitor) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-12">
-        <p className="text-neutral-600">Loading competitor…</p>
-      </main>
+      <p className="flex items-center gap-2 py-16 text-slate-600">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading competitor…
+      </p>
     );
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
-      <p className="text-sm font-medium text-indigo-700">
-        <Link href="/competitors" className="hover:underline">← Competitors</Link>
-      </p>
-      <h1 className="mt-1 text-3xl font-semibold">Edit {competitor.companyName}</h1>
-      <p className="mt-2 text-neutral-600">Changes are saved under your organization only.</p>
-      <div className="mt-2 rounded-lg border border-neutral-200 bg-white p-6">
+    <div>
+      <PageHeader
+        eyebrow={
+          <BackLink href="/competitors">
+            <ArrowLeft className="h-4 w-4" /> Competitors
+          </BackLink>
+        }
+        title={`Edit ${competitor.companyName}`}
+        description="Changes are saved under your organization only."
+      />
+      <Card className="mt-6 max-w-3xl p-6 sm:p-8">
         <CompetitorForm
           defaultValues={{
             companyName: competitor.companyName,
@@ -82,7 +87,7 @@ export default function EditCompetitorPage() {
           serverError={serverError}
           onSubmit={onSubmit}
         />
-      </div>
-    </main>
+      </Card>
+    </div>
   );
 }

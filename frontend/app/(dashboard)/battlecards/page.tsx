@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Loader2, Plus, Sparkles, Swords } from "lucide-react";
 import { listCompetitors } from "@/services/competitors";
 import { generateBattlecard, listBattlecards } from "@/services/battlecards";
+import { Badge, Card, EmptyState, PageHeader, btnPrimary, btnSecondary } from "@/components/ui";
 import type { BattlecardListItem, Competitor } from "@/types";
 
 // Phase 7: the battlecards list — every competitor with its battlecard
@@ -50,67 +52,78 @@ export default function BattlecardsPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
-      <p className="text-sm font-medium text-indigo-700">
-        <Link href="/dashboard" className="hover:underline">← Dashboard</Link>
-      </p>
-      <h1 className="mt-1 text-3xl font-semibold">Battlecards</h1>
-      <p className="mt-2 text-neutral-600">
-        One battlecard per competitor, built from your real scans and AI
-        analyses — pricing, features, recent changes, complaints, and
-        talking points for sales calls.
-      </p>
+    <div>
+      <PageHeader
+        title="Battlecards"
+        description="One battlecard per competitor, built from your real scans and AI analyses — pricing, features, recent changes, complaints, and talking points for sales calls."
+      />
 
       {loadError && (
-        <p className="mt-6 rounded-md bg-red-50 p-3 text-sm text-red-700">{loadError}</p>
+        <p className="mt-6 rounded-lg bg-red-50 p-3 text-sm text-red-700">{loadError}</p>
       )}
       {actionError && (
-        <p className="mt-6 rounded-md bg-red-50 p-3 text-sm text-red-700">{actionError}</p>
+        <p className="mt-6 rounded-lg bg-red-50 p-3 text-sm text-red-700">{actionError}</p>
       )}
 
       {competitors.length === 0 ? (
-        <p className="mt-6 rounded-lg border border-neutral-200 bg-white p-5 text-neutral-700">
-          No competitors yet.{" "}
-          <Link href="/competitors/new" className="font-medium text-indigo-700 hover:underline">
-            Add one
-          </Link>{" "}
-          and scan it first — a battlecard needs real snapshot data.
-        </p>
+        <Card className="mt-6">
+          <EmptyState
+            icon={<Swords className="h-5 w-5" />}
+            title="No competitors yet"
+            description="Add a competitor and scan it first — a battlecard needs real snapshot data."
+            action={
+              <Link href="/competitors/new" className={btnPrimary}>
+                <Plus className="h-4 w-4" /> Add a competitor
+              </Link>
+            }
+          />
+        </Card>
       ) : (
-        <ul className="mt-6 space-y-3">
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
           {competitors.map((c) => {
             const card = cards.get(c.id);
             return (
-              <li key={c.id} className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 bg-white p-5">
-                <div>
-                  <p className="font-medium">{c.companyName}</p>
-                  <p className="text-sm text-neutral-500">
-                    {card
-                      ? `Version ${card.version} · Last updated ${new Date(card.updatedAt).toLocaleString()}`
-                      : "No battlecard yet"}
-                  </p>
+              <Card key={c.id} className="flex items-center justify-between gap-4 p-5">
+                <div className="flex min-w-0 items-start gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-base font-semibold text-indigo-700">
+                    {c.companyName.slice(0, 1).toUpperCase()}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-slate-900">{c.companyName}</p>
+                    <p className="mt-0.5 text-sm text-slate-500">
+                      {card
+                        ? `Version ${card.version} · Last updated ${new Date(card.updatedAt).toLocaleString()}`
+                        : "No battlecard yet"}
+                    </p>
+                    {card ? <Badge tone="green">Generated</Badge> : <Badge tone="neutral">Not generated</Badge>}
+                  </div>
                 </div>
                 {card ? (
-                  <Link
-                    href={`/battlecards/${c.id}`}
-                    className="shrink-0 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium"
-                  >
+                  <Link href={`/battlecards/${c.id}`} className={`${btnSecondary} shrink-0`}>
                     View
                   </Link>
                 ) : (
                   <button
                     onClick={() => handleGenerate(c.id)}
                     disabled={generatingId === c.id}
-                    className="shrink-0 rounded-md bg-indigo-700 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                    className={`${btnPrimary} shrink-0`}
                   >
-                    {generatingId === c.id ? "Generating…" : "Generate"}
+                    {generatingId === c.id ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" /> Generating…
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4" /> Generate
+                      </>
+                    )}
                   </button>
                 )}
-              </li>
+              </Card>
             );
           })}
-        </ul>
+        </div>
       )}
-    </main>
+    </div>
   );
 }

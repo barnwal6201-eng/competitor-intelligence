@@ -3,15 +3,25 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getCurrentUser, logoutUser } from "@/services/auth";
+import {
+  Activity,
+  AlertTriangle,
+  ArrowRight,
+  Building2,
+  Loader2,
+  Plus,
+  Swords,
+} from "lucide-react";
+import { getCurrentUser } from "@/services/auth";
 import { getDashboardOverview } from "@/services/dashboard";
 import { categoryLabel } from "@/components/ChangeCard";
+import { Badge, Card, EmptyState, PageHeader, btnPrimary } from "@/components/ui";
 import type { AuthUser, DashboardOverview } from "@/types";
 
-// Phase 8: the dashboard is now a real overview instead of a status page.
-// Every number on it is a live count over the signed-in user's own data —
-// competitors, changes, price moves, battlecards, and scan health. An
-// empty workspace shows honest zeros and empty states, never sample data.
+// Phase 12 restyle of the Phase 8 dashboard. Every number is still a live
+// count over the signed-in user's own data — competitors, changes, price
+// moves, battlecards, and scan health. An empty workspace shows honest
+// zeros and empty states, never sample data.
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -30,24 +40,16 @@ export default function DashboardPage() {
       });
   }, [router]);
 
-  async function handleLogout() {
-    await logoutUser();
-    router.push("/login");
-    router.refresh();
-  }
-
   if (error) {
     return (
-      <main className="mx-auto max-w-4xl px-6 py-12">
-        <p className="text-red-700">{error}</p>
-      </main>
+      <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
     );
   }
   if (!user || !overview) {
     return (
-      <main className="mx-auto max-w-4xl px-6 py-12">
-        <p className="text-neutral-600">Loading your workspace…</p>
-      </main>
+      <div className="flex items-center gap-2 py-16 text-slate-600">
+        <Loader2 className="h-5 w-5 animate-spin" /> Loading your workspace…
+      </div>
     );
   }
 
@@ -55,90 +57,120 @@ export default function DashboardPage() {
   const maxDay = Math.max(1, ...overview.changesPerDay.map((d) => d.count));
   const totalTrend = overview.changesPerDay.reduce((sum, d) => sum + d.count, 0);
 
+  const statCards = [
+    {
+      icon: Building2,
+      iconClass: "bg-indigo-50 text-indigo-600",
+      value: stats.competitors,
+      label: "Competitors",
+      sub: `${stats.monitoringEnabled} monitoring · ${stats.monitoringPaused} paused`,
+    },
+    {
+      icon: Activity,
+      iconClass: "bg-indigo-50 text-indigo-600",
+      value: stats.changesLast7Days,
+      label: "Changes · last 7 days",
+      sub: `${stats.changes} total · ${stats.snapshots} snapshots`,
+    },
+    {
+      icon: AlertTriangle,
+      iconClass: "bg-red-50 text-red-600",
+      value: stats.highChangesLast7Days,
+      label: "High priority · last 7 days",
+      sub: "Price rises, removed plans, bad reviews",
+      valueClass: "text-red-700",
+    },
+    {
+      icon: Swords,
+      iconClass: "bg-indigo-50 text-indigo-600",
+      value: stats.battlecards,
+      label: "Battlecards",
+      sub: `${stats.analyses} AI analyses`,
+    },
+  ];
+
   return (
-    <main className="mx-auto max-w-4xl px-6 py-12">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-indigo-700">{user.organization.name}</p>
-          <h1 className="mt-1 text-3xl font-semibold">Welcome, {user.name}</h1>
-          <p className="mt-2 text-neutral-600">
-            Signed in as {user.email} · Role: {user.role}
-          </p>
-        </div>
-        <button
-          onClick={handleLogout}
-          className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium"
-        >
-          Sign out
-        </button>
-      </div>
+    <div>
+      <PageHeader
+        eyebrow={user.organization.name}
+        title={`Welcome, ${user.name}`}
+        description={`Signed in as ${user.email} · Role: ${user.role}`}
+        actions={
+          <Link href="/competitors/new" className={btnPrimary}>
+            <Plus className="h-4 w-4" /> Add competitor
+          </Link>
+        }
+      />
 
       {/* Stat cards — real counts, nothing faked. */}
-      <section className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div className="rounded-lg border border-neutral-200 bg-white p-4">
-          <p className="text-2xl font-semibold">{stats.competitors}</p>
-          <p className="text-sm text-neutral-600">Competitors</p>
-          <p className="text-xs text-neutral-500">
-            {stats.monitoringEnabled} monitoring · {stats.monitoringPaused} paused
-          </p>
-        </div>
-        <div className="rounded-lg border border-neutral-200 bg-white p-4">
-          <p className="text-2xl font-semibold">{stats.changesLast7Days}</p>
-          <p className="text-sm text-neutral-600">Changes · last 7 days</p>
-          <p className="text-xs text-neutral-500">{stats.changes} total · {stats.snapshots} snapshots</p>
-        </div>
-        <div className="rounded-lg border border-neutral-200 bg-white p-4">
-          <p className="text-2xl font-semibold text-red-700">{stats.highChangesLast7Days}</p>
-          <p className="text-sm text-neutral-600">High priority · last 7 days</p>
-          <p className="text-xs text-neutral-500">Price rises, removed plans, bad reviews</p>
-        </div>
-        <div className="rounded-lg border border-neutral-200 bg-white p-4">
-          <p className="text-2xl font-semibold">{stats.battlecards}</p>
-          <p className="text-sm text-neutral-600">Battlecards</p>
-          <p className="text-xs text-neutral-500">{stats.analyses} AI analyses</p>
-        </div>
+      <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {statCards.map(({ icon: Icon, iconClass, value, label, sub, valueClass }) => (
+          <Card key={label} className="p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className={`text-3xl font-semibold tracking-tight text-slate-900 ${valueClass ?? ""}`}>{value}</p>
+                <p className="mt-1 text-sm font-medium text-slate-700">{label}</p>
+                <p className="mt-0.5 text-xs text-slate-500">{sub}</p>
+              </div>
+              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${iconClass}`}>
+                <Icon className="h-5 w-5" />
+              </span>
+            </div>
+          </Card>
+        ))}
       </section>
 
       {/* Changes over time — 14-day bar chart, plain divs, no chart library. */}
-      <section className="mt-6 rounded-lg border border-neutral-200 bg-white p-6">
-        <h2 className="text-lg font-medium">Changes over time</h2>
-        <p className="text-sm text-neutral-500">
-          Detected changes per day, last 14 days · {totalTrend} total
-        </p>
+      <Card className="mt-6 p-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-lg font-semibold text-slate-900">Changes over time</h2>
+          <p className="text-sm text-slate-500">Detected changes per day, last 14 days · {totalTrend} total</p>
+        </div>
         {totalTrend === 0 ? (
-          <p className="mt-4 text-sm text-neutral-500">
-            No changes in the last 14 days — scan a competitor to start tracking.
-          </p>
+          <EmptyState
+            icon={<Activity className="h-5 w-5" />}
+            title="No changes in the last 14 days"
+            description="Scan a competitor to start tracking — the first scan sets the baseline, the next one shows what moved."
+            action={
+              <Link href="/competitors" className={btnPrimary}>
+                Go to competitors <ArrowRight className="h-4 w-4" />
+              </Link>
+            }
+          />
         ) : (
-          <div className="mt-4 flex items-end gap-1" style={{ height: "120px" }}>
+          <div className="mt-6 flex items-end gap-1.5 border-b border-slate-200 pb-1" style={{ height: "140px" }}>
             {overview.changesPerDay.map((d) => (
-              <div key={d.date} className="flex flex-1 flex-col items-center justify-end gap-1" title={`${d.date}: ${d.count} change${d.count === 1 ? "" : "s"}`}>
-                <span className="text-xs font-medium text-neutral-700">{d.count > 0 ? d.count : ""}</span>
+              <div
+                key={d.date}
+                className="group flex flex-1 flex-col items-center justify-end gap-1"
+                title={`${d.date}: ${d.count} change${d.count === 1 ? "" : "s"}`}
+              >
+                <span className="text-xs font-semibold text-slate-700">{d.count > 0 ? d.count : ""}</span>
                 <div
-                  className="w-full rounded-t bg-indigo-600"
-                  style={{ height: `${Math.max(d.count === 0 ? 2 : (d.count / maxDay) * 80, 2)}px` }}
+                  className="w-full max-w-8 rounded-t-md bg-indigo-500 transition group-hover:bg-indigo-600"
+                  style={{ height: `${Math.max(d.count === 0 ? 3 : (d.count / maxDay) * 96, 3)}px` }}
                 />
-                <span className="text-[10px] text-neutral-500">{d.date.slice(5)}</span>
+                <span className="text-[10px] font-medium text-slate-500">{d.date.slice(5)}</span>
               </div>
             ))}
           </div>
         )}
-      </section>
+      </Card>
 
       {/* Most active competitors + recent price moves. */}
-      <section className="mt-6 grid gap-6 md:grid-cols-2">
-        <div className="rounded-lg border border-neutral-200 bg-white p-6">
-          <h2 className="text-lg font-medium">Most active competitors</h2>
+      <section className="mt-6 grid gap-6 lg:grid-cols-2">
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold text-slate-900">Most active competitors</h2>
           {overview.topCompetitors.length === 0 ? (
-            <p className="mt-2 text-sm text-neutral-500">No changes detected yet.</p>
+            <p className="mt-3 text-sm text-slate-500">No changes detected yet.</p>
           ) : (
-            <ul className="mt-3 space-y-3">
+            <ul className="mt-4 divide-y divide-slate-100">
               {overview.topCompetitors.map((c) => (
-                <li key={c.competitorId} className="flex items-center justify-between gap-3 text-sm">
-                  <Link href={`/competitors/${c.competitorId}`} className="font-medium text-indigo-700 hover:underline">
+                <li key={c.competitorId} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                  <Link href={`/competitors/${c.competitorId}`} className="text-sm font-medium text-indigo-600 hover:underline">
                     {c.competitorName ?? c.competitorId}
                   </Link>
-                  <span className="shrink-0 text-neutral-600">
+                  <span className="shrink-0 text-sm text-slate-500">
                     {c.changeCount} change{c.changeCount === 1 ? "" : "s"} ·{" "}
                     {new Date(c.latestChangeAt).toLocaleDateString()}
                   </span>
@@ -146,124 +178,138 @@ export default function DashboardPage() {
               ))}
             </ul>
           )}
-        </div>
-        <div className="rounded-lg border border-neutral-200 bg-white p-6">
-          <h2 className="text-lg font-medium">Recent price moves</h2>
+        </Card>
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold text-slate-900">Recent price moves</h2>
           {overview.priceMoves.length === 0 ? (
-            <p className="mt-2 text-sm text-neutral-500">No price moves detected yet.</p>
+            <p className="mt-3 text-sm text-slate-500">No price moves detected yet.</p>
           ) : (
-            <ul className="mt-3 space-y-3">
+            <ul className="mt-4 divide-y divide-slate-100">
               {overview.priceMoves.map((m) => (
-                <li key={m.id} className="text-sm">
-                  <span className={m.category === "price_increase" ? "font-medium text-red-700" : "font-medium text-green-700"}>
-                    {categoryLabel(m.category)}
-                  </span>{" "}
-                  · {m.title}
-                  <span className="block text-xs text-neutral-500">
+                <li key={m.id} className="py-3 first:pt-0 last:pb-0">
+                  <p className="text-sm">
+                    <Badge tone={m.category === "price_increase" ? "red" : "green"}>{categoryLabel(m.category)}</Badge>{" "}
+                    <span className="font-medium text-slate-900">{m.title}</span>
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
                     {m.competitorName} · {new Date(m.detectedAt).toLocaleDateString()}
-                  </span>
+                  </p>
                 </li>
               ))}
             </ul>
           )}
-        </div>
+        </Card>
       </section>
 
       {/* Recent activity. */}
-      <section className="mt-6 rounded-lg border border-neutral-200 bg-white p-6">
-        <h2 className="text-lg font-medium">Recent activity</h2>
+      <Card className="mt-6 p-6">
+        <h2 className="text-lg font-semibold text-slate-900">Recent activity</h2>
         {overview.recentChanges.length === 0 ? (
-          <p className="mt-2 text-sm text-neutral-500">
+          <p className="mt-3 text-sm text-slate-500">
             Nothing yet — changes appear here after a scan finds something different.
           </p>
         ) : (
-          <ul className="mt-3 space-y-3">
+          <ul className="mt-4 divide-y divide-slate-100">
             {overview.recentChanges.map((c) => (
-              <li key={c.id} className="text-sm text-neutral-700">
-                <span className="font-medium">{categoryLabel(c.category)}</span> · {c.title}{" "}
-                <span className="text-neutral-500">
-                  — {c.competitorName} · {new Date(c.detectedAt).toLocaleString()}
-                </span>
+              <li key={c.id} className="py-3 first:pt-0 last:pb-0">
+                <p className="text-sm text-slate-700">
+                  <Badge tone={c.significance === "high" ? "red" : c.significance === "medium" ? "amber" : "neutral"}>
+                    {categoryLabel(c.category)}
+                  </Badge>{" "}
+                  {c.title}{" "}
+                  <span className="text-slate-500">
+                    — {c.competitorName} · {new Date(c.detectedAt).toLocaleString()}
+                  </span>
+                </p>
               </li>
             ))}
           </ul>
         )}
-        <p className="mt-4">
-          <Link href="/intelligence" className="font-medium text-indigo-700 hover:underline">
-            View the full intelligence feed →
+        <p className="mt-5">
+          <Link href="/intelligence" className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:underline">
+            View the full intelligence feed <ArrowRight className="h-4 w-4" />
           </Link>
         </p>
-      </section>
+      </Card>
 
       {/* Scan health — when each competitor was last scanned, and whether it worked. */}
-      <section className="mt-6 rounded-lg border border-neutral-200 bg-white p-6">
-        <h2 className="text-lg font-medium">Scan health</h2>
+      <Card className="mt-6 p-6">
+        <h2 className="text-lg font-semibold text-slate-900">Scan health</h2>
         {overview.scanHealth.length === 0 ? (
-          <p className="mt-2 text-sm text-neutral-500">
-            No competitors yet.{" "}
-            <Link href="/competitors/new" className="font-medium text-indigo-700 hover:underline">
-              Add one
-            </Link>{" "}
-            and scan it.
-          </p>
+          <EmptyState
+            icon={<Building2 className="h-5 w-5" />}
+            title="No competitors yet"
+            description="Add your first competitor and scan it to start tracking."
+            action={
+              <Link href="/competitors/new" className={btnPrimary}>
+                <Plus className="h-4 w-4" /> Add competitor
+              </Link>
+            }
+          />
         ) : (
-          <table className="mt-3 w-full text-sm">
-            <thead>
-              <tr className="border-b border-neutral-200 text-left text-neutral-500">
-                <th className="py-1 pr-2 font-medium">Competitor</th>
-                <th className="py-1 pr-2 font-medium">Monitoring</th>
-                <th className="py-1 pr-2 font-medium">Last scan</th>
-                <th className="py-1 pr-2 font-medium">Result</th>
-                <th className="py-1 font-medium">Snapshots</th>
-              </tr>
-            </thead>
-            <tbody>
-              {overview.scanHealth.map((row) => (
-                <tr key={row.competitorId} className="border-b border-neutral-100">
-                  <td className="py-2 pr-2">
-                    <Link href={`/competitors/${row.competitorId}`} className="font-medium text-indigo-700 hover:underline">
-                      {row.competitorName}
-                    </Link>
-                  </td>
-                  <td className="py-2 pr-2 text-neutral-600">{row.monitoringEnabled ? "Enabled" : "Paused"}</td>
-                  <td className="py-2 pr-2 text-neutral-600">
-                    {row.lastScanAt ? new Date(row.lastScanAt).toLocaleString() : "Never scanned"}
-                  </td>
-                  <td className="py-2 pr-2">
-                    {row.lastScanStatus === "success" ? (
-                      <span className="text-green-700">Success</span>
-                    ) : row.lastScanStatus === "blocked" ? (
-                      <span className="text-amber-700">Blocked</span>
-                    ) : row.lastScanStatus === "failed" ? (
-                      <span className="text-red-700">Failed</span>
-                    ) : (
-                      <span className="text-neutral-500">—</span>
-                    )}
-                  </td>
-                  <td className="py-2 text-neutral-600">{row.totalSnapshots}</td>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[560px] text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                  <th className="pb-2 pr-3 font-medium">Competitor</th>
+                  <th className="pb-2 pr-3 font-medium">Monitoring</th>
+                  <th className="pb-2 pr-3 font-medium">Last scan</th>
+                  <th className="pb-2 pr-3 font-medium">Result</th>
+                  <th className="pb-2 font-medium">Snapshots</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {overview.scanHealth.map((row) => (
+                  <tr key={row.competitorId} className="border-b border-slate-100 last:border-0">
+                    <td className="py-3 pr-3">
+                      <Link href={`/competitors/${row.competitorId}`} className="font-medium text-indigo-600 hover:underline">
+                        {row.competitorName}
+                      </Link>
+                    </td>
+                    <td className="py-3 pr-3 text-slate-600">
+                      {row.monitoringEnabled ? (
+                        <Badge tone="green">Enabled</Badge>
+                      ) : (
+                        <Badge tone="neutral">Paused</Badge>
+                      )}
+                    </td>
+                    <td className="py-3 pr-3 text-slate-600">
+                      {row.lastScanAt ? new Date(row.lastScanAt).toLocaleString() : "Never scanned"}
+                    </td>
+                    <td className="py-3 pr-3">
+                      {row.lastScanStatus === "success" ? (
+                        <Badge tone="green">Success</Badge>
+                      ) : row.lastScanStatus === "blocked" ? (
+                        <Badge tone="amber">Blocked</Badge>
+                      ) : row.lastScanStatus === "failed" ? (
+                        <Badge tone="red">Failed</Badge>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </td>
+                    <td className="py-3 font-medium text-slate-900">{row.totalSnapshots}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </section>
+      </Card>
 
-      <section className="mt-6 rounded-lg border border-neutral-200 bg-white p-6">
-        <p className="text-sm text-neutral-700">
-          Everything above is live data from your workspace — nothing is
-          faked or sampled.{" "}
-          <Link href="/competitors" className="font-medium text-indigo-700 hover:underline">
+      <Card className="mt-6 p-6">
+        <p className="text-sm text-slate-700">
+          Everything above is live data from your workspace — nothing is faked or sampled.{" "}
+          <Link href="/competitors" className="font-medium text-indigo-600 hover:underline">
             Manage competitors →
           </Link>{" "}
-          <Link href="/battlecards" className="ml-3 font-medium text-indigo-700 hover:underline">
+          <Link href="/battlecards" className="ml-3 font-medium text-indigo-600 hover:underline">
             View battlecards →
           </Link>
         </p>
-        <p className="mt-3 text-sm text-neutral-500">
-          Next: Phase 9 — background jobs with Redis + BullMQ (scheduled
-          scans, so you don&apos;t have to press Scan now by hand).
+        <p className="mt-2 text-sm text-slate-500">
+          Scans also run in the background on each competitor&apos;s schedule — you don&apos;t have to press Scan now by hand.
         </p>
-      </section>
-    </main>
+      </Card>
+    </div>
   );
 }

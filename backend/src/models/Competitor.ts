@@ -13,6 +13,12 @@ export interface ICompetitor extends Document {
   reviewSourceUrl?: string;
   monitoringFrequency: MonitoringFrequency;
   isMonitoringEnabled: boolean;
+  // Phase 9: last background/manual scan outcome, updated by the worker
+  // (or by the synchronous fallback). The dashboard's scan-health table
+  // reads the latest Snapshot for this, but these fields give the
+  // competitor list a cheap answer without an aggregation.
+  lastScannedAt?: Date;
+  lastScanStatus?: "success" | "partial" | "failed";
   createdBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -36,6 +42,8 @@ const CompetitorSchema = new Schema<ICompetitor>(
     reviewSourceUrl: { type: String, trim: true, validate: urlValidator },
     monitoringFrequency: { type: String, enum: ["hourly", "daily", "weekly"], default: "daily" },
     isMonitoringEnabled: { type: Boolean, default: true },
+    lastScannedAt: { type: Date },
+    lastScanStatus: { type: String, enum: ["success", "partial", "failed"] },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: true }

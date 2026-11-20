@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { registerUser } from "@/services/auth";
+import { btnPrimary, inputClass, labelClass } from "@/components/ui";
 
 const registerSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
@@ -38,45 +39,44 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-6">
-      <h1 className="text-2xl font-semibold">Create your account</h1>
-      <p className="mt-1 text-sm text-neutral-600">
+    <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+      <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Create your account</h1>
+      <p className="mt-1 text-sm text-slate-600">
         Registering also creates your organization workspace. You will be its owner.
       </p>
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-5">
         <div>
-          <label htmlFor="name" className="text-sm font-medium">Your name</label>
-          <input id="name" type="text" autoComplete="name" {...register("name")}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2" />
+          <label htmlFor="name" className={labelClass}>Your name</label>
+          <input id="name" type="text" autoComplete="name" placeholder="Ankit Kumar" {...register("name")}
+            className={inputClass} />
           {errors.name && <p className="mt-1 text-sm text-red-700">{errors.name.message}</p>}
         </div>
         <div>
-          <label htmlFor="organizationName" className="text-sm font-medium">Organization name (optional)</label>
+          <label htmlFor="organizationName" className={labelClass}>Organization name (optional)</label>
           <input id="organizationName" type="text" {...register("organizationName")}
             placeholder="e.g. Acme Sales Team"
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2" />
+            className={inputClass} />
           {errors.organizationName && <p className="mt-1 text-sm text-red-700">{errors.organizationName.message}</p>}
         </div>
         <div>
-          <label htmlFor="email" className="text-sm font-medium">Email</label>
-          <input id="email" type="email" autoComplete="email" {...register("email")}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2" />
+          <label htmlFor="email" className={labelClass}>Email</label>
+          <input id="email" type="email" autoComplete="email" placeholder="you@company.com" {...register("email")}
+            className={inputClass} />
           {errors.email && <p className="mt-1 text-sm text-red-700">{errors.email.message}</p>}
         </div>
         <div>
-          <label htmlFor="password" className="text-sm font-medium">Password (at least 8 characters)</label>
+          <label htmlFor="password" className={labelClass}>Password (at least 8 characters)</label>
           <input id="password" type="password" autoComplete="new-password" {...register("password")}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2" />
+            className={inputClass} />
           {errors.password && <p className="mt-1 text-sm text-red-700">{errors.password.message}</p>}
         </div>
-        {serverError && <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">{serverError}</p>}
-        <button type="submit" disabled={isSubmitting}
-          className="w-full rounded-md bg-indigo-700 px-4 py-2 font-medium text-white disabled:opacity-50">
+        {serverError && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{serverError}</p>}
+        <button type="submit" disabled={isSubmitting} className={`${btnPrimary} w-full`}>
           {isSubmitting ? "Creating account…" : "Create account"}
         </button>
       </form>
-      <p className="mt-4 text-sm text-neutral-600">
-        Already have an account? <Link href="/login" className="font-medium text-indigo-700">Sign in</Link>
+      <p className="mt-6 text-center text-sm text-slate-600">
+        Already have an account? <Link href="/login" className="font-medium text-indigo-600 hover:underline">Sign in</Link>
       </p>
     </div>
   );

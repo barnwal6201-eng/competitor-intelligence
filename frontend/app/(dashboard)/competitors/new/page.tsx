@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import CompetitorForm from "../CompetitorForm";
 import { createCompetitor } from "@/services/competitors";
+import { BackLink, Card, PageHeader } from "@/components/ui";
 import type { CompetitorInput } from "@/types";
 
 export default function NewCompetitorPage() {
@@ -23,17 +24,19 @@ export default function NewCompetitorPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
-      <p className="text-sm font-medium text-indigo-700">
-        <Link href="/competitors" className="hover:underline">← Competitors</Link>
-      </p>
-      <h1 className="mt-1 text-3xl font-semibold">Add a competitor</h1>
-      <p className="mt-2 text-neutral-600">
-        It is saved under your organization only — no other organization can see it.
-      </p>
-      <div className="mt-2 rounded-lg border border-neutral-200 bg-white p-6">
+    <div>
+      <PageHeader
+        eyebrow={
+          <BackLink href="/competitors">
+            <ArrowLeft className="h-4 w-4" /> Competitors
+          </BackLink>
+        }
+        title="Add a competitor"
+        description="It is saved under your organization only — no other organization can see it."
+      />
+      <Card className="mt-6 max-w-3xl p-6 sm:p-8">
         <CompetitorForm submitLabel="Add competitor" serverError={serverError} onSubmit={onSubmit} />
-      </div>
-    </main>
+      </Card>
+    </div>
   );
 }

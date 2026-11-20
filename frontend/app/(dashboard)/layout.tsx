@@ -1,8 +1,9 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import AppShell from "@/components/AppShell";
 
 // Server-side guard for the whole (dashboard) group: no token cookie, no entry.
-// The dashboard page itself then calls /api/auth/me, which verifies the token.
+// The dashboard pages themselves then call /api/auth/me, which verifies the token.
 //
 // NOTE: `cookies()` is awaited here on purpose. In Next.js 14 it returns the
 // cookie store synchronously (await on a non-promise is a no-op), but in
@@ -15,5 +16,5 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!token) {
     redirect("/login");
   }
-  return <>{children}</>;
+  return <AppShell>{children}</AppShell>;
 }

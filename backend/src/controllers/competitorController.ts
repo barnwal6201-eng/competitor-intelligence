@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { z } from "zod";
 import { Competitor } from "../models/Competitor";
 import { createCompetitorSchema, updateCompetitorSchema } from "../validators/competitor";
+import { scheduleCompetitor, unscheduleCompetitor } from "../queues/scanQueue";
 import type { AuthRequest } from "../middleware/auth";
 
 function dbConnected(res: Response): boolean {
@@ -46,6 +47,8 @@ function publicCompetitor(c: any) {
     reviewSourceUrl: c.reviewSourceUrl,
     monitoringFrequency: c.monitoringFrequency,
     isMonitoringEnabled: c.isMonitoringEnabled,
+    lastScannedAt: c.lastScannedAt ? c.lastScannedAt.toISOString() : null,
+    lastScanStatus: c.lastScanStatus ?? null,
     createdBy: String(c.createdBy),
     createdAt: c.createdAt.toISOString(),
     updatedAt: c.updatedAt.toISOString(),
@@ -114,6 +117,13 @@ export async function createCompetitor(req: AuthRequest, res: Response): Promise
       organizationId: req.user!.organizationId,
       createdBy: req.user!.id,
     });
+    // Phase 9: schedule automatic scans for the new competitor.
+    // Best-effort — a Redis outage must never fail the create request.
+    try {
+      await scheduleCompetitor(competitor);
+    } catch (err) {
+      console.warn("Could not schedule scans for new competitor:", err);
+    }
     res.status(201).json({ competitor: publicCompetitor(competitor) });
   } catch (err) {
     if (handleValidationError(err, res)) return;
@@ -160,6 +170,16 @@ export async function updateCompetitor(req: AuthRequest, res: Response): Promise
       res.status(404).json({ error: "Competitor not found" });
       return;
     }
+    // Phase 9: a frequency change or pause/resume re-creates the
+    // repeatable job (scheduleCompetitor removes the old one first via
+    // unschedule when paused; resync on startup covers the rest).
+    // Best-effort — never fail the update request for Redis.
+    try {
+      if (competitor.isMonitoringEnabled) await scheduleCompetitor(competitor);
+      else await unscheduleCompetitor(String(competitor._id));
+    } catch (err) {
+      console.warn("Could not reschedule scans for competitor:", err);
+    }
     res.json({ competitor: publicCompetitor(competitor) });
   } catch (err) {
     if (handleValidationError(err, res)) return;
@@ -184,6 +204,12 @@ export async function deleteCompetitor(req: AuthRequest, res: Response): Promise
     if (!deleted) {
       res.status(404).json({ error: "Competitor not found" });
       return;
+    }
+    // Phase 9: remove its repeatable scan job. Best-effort.
+    try {
+      await unscheduleCompetitor(String(deleted._id));
+    } catch (err) {
+      console.warn("Could not unschedule scans for deleted competitor:", err);
     }
     res.json({ ok: true });
   } catch (err) {

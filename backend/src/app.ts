@@ -7,6 +7,7 @@ import competitorsRouter from "./routes/competitors";
 import changesRouter from "./routes/changes";
 import battlecardsRouter from "./routes/battlecards";
 import dashboardRouter from "./routes/dashboard";
+import jobsRouter from "./routes/jobs";
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use("/api/competitors", competitorsRouter);
 app.use("/api/changes", changesRouter);
 app.use("/api/battlecards", battlecardsRouter);
 app.use("/api/dashboard", dashboardRouter);
+app.use("/api/jobs", jobsRouter);
 
 app.use((_req, res) => {
   res.status(404).json({ error: "Not found" });

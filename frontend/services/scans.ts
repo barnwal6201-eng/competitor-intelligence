@@ -1,6 +1,7 @@
-import type { ScanSummary, Snapshot } from "@/types";
+import type { ScanEnqueueResult, ScanSummary, Snapshot } from "@/types";
 
-// Scan + snapshot API calls (Phase 4). Every call sends the httpOnly auth cookie.
+// Scan + snapshot API calls (Phase 4, Phase 9). Every call sends the
+// httpOnly auth cookie.
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 async function handleResponse<T>(res: Response): Promise<T> {
@@ -11,12 +12,16 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return data as T;
 }
 
-export async function triggerScan(competitorId: string): Promise<ScanSummary> {
+// Phase 9: POST /scan now enqueues a background job (202) instead of
+// scraping in the request. The return tells the page whether the scan
+// was queued (poll GET /api/jobs/:jobId until completed/failed) or ran
+// synchronously because Redis was down (queued: false, scan included).
+export async function triggerScan(competitorId: string): Promise<ScanEnqueueResult> {
   const res = await fetch(`${API_URL}/api/competitors/${competitorId}/scan`, {
     method: "POST",
     credentials: "include",
   });
-  return (await handleResponse<{ scan: ScanSummary }>(res)).scan;
+  return handleResponse<ScanEnqueueResult>(res);
 }
 
 export async function listSnapshots(
