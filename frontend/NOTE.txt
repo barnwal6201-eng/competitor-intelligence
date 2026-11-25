@@ -1,0 +1,87 @@
+LANDING PAGE REDESIGN - FILES CREATED
+=======================================
+
+1. app/layout.tsx
+   - Inter font setup using next/font/google with variable "--font-inter"
+   - Background gradient variable: --bg = linear-gradient(#EEF0FF, #FFFFFF, #FDF2F8, #EFF6FF)
+   - Text variable: --text = #0F172A
+   - No CSS-in-JS, pure Tailwind classes
+
+2. app/page.tsx
+   - Composed landing page using all landing components
+   - Layout: Navbar → Hero → DashboardPreview → StatsRow → Features → HowItWorks → FinalCta → Footer
+   - All existing routes preserved: /login, /register, /dashboard
+
+3. components/landing/ (9 components + types)
+
+   a) Types/types.ts
+      - Tone type: "neutral" | "red"
+      - Interfaces: IconChipProps, BadgeProps, BtnPrimaryProps, BtnSecondaryProps, NavbarProps, Feature, HowItWorksStep, StatCard, DashboardStats, PriceMove
+      - Exported: StatCardProps (separate from StatCard interface)
+
+   b) IconChip.tsx
+      - 40px rounded-lg circle with pale indigo bg (#EEF0FF) and indigo icon
+   c) Badge.tsx
+      - Small pill badges with tone prop ("neutral" | "red")
+      - Accepts optional className prop
+   d) BtnPrimary.tsx
+      - Indigo, radius 12px, soft shadow, hover lift
+      - Supports href for next/link
+   e) BtnSecondary.tsx
+      - White with indigo border, radius 12px, soft shadow
+      - Supports href for next/link
+   f) Navbar.tsx
+      - Sticky top nav: translucent white with backdrop blur
+      - Logo chip + "Competitor Intelligence / Scraper & Battlecard Agent" left
+      - "Sign in" + "Get started" right
+   g) Hero.tsx
+      - Eyebrow: "THE SALES TEAM'S COMPETITIVE EDGE"
+      - H1 with clamp(2.5rem, 5.5vw, 4.25rem), line-height 1.08
+      - "before your next sales call." in indigo→violet gradient text
+      - Centered subtitle, max-w-2xl, 18px, slate
+      - Two CTAs: side-by-side on desktop, stacked on mobile
+   h) DashboardPreview.tsx
+      - White rounded-2xl card with indigo-100/80 border and soft shadow
+      - Browser frame mock with:
+        * 4 stat cards (Competitors, Changes · last 7d, High priority, Battlecards)
+        * "Changes over time" bar chart (div-based)
+        * "Recent price moves" card with red "Price increase" badge
+   i) Features.tsx
+      - 4 cards (Pricing pages, Changelogs, Job listings, Reviews)
+      - Each with icon chip, title, one-line description
+   j) HowItWorks.tsx
+      - 3 steps: Watch → Detect changes → Get battlecards
+   k) FinalCta.tsx
+      - Indigo gradient banner with white "Ready to win more deals?" text + CTA button
+   l) Footer.tsx
+      - Simple footer with "Already have an account? Sign in"
+
+4. TypeScript: 0 errors from landing page components
+   - All props typed with interfaces/types
+   - No `any` used
+   - `import type` where possible
+
+5. Build notes:
+   - `next build` fails due to existing dashboard pages using MUI materials (@mui/* modules not resolved in this frontend setup)
+   - The TypeScript check (tsc --noEmit) passes with 0 errors for the landing page
+   - Tailwind CSS content paths already include "./components/**/*.{js,ts,jsx,tsx,mdx}"
+
+CHANGES NEEDED:
+- Tailwind config already includes component paths: "./app/**/*.{js,ts,jsx,tsx,mdx}" and "./components/**/*.{js,ts,jsx,tsx,mdx}"
+- No globals.css needed - the layout.tsx sets background via CSS variables
+- The design language variables are set in layout.tsx:
+  --bg: soft multi-stop gradient
+  --text: navy #0F172A
+- All navigation uses next/link
+- All icons from lucide-react
+- next/font/google for Inter
+
+COMPONENTS COMPOSITION ORDER:
+1. Navbar - sticky top navigation
+2. Hero - centered hero section with gradient text H1
+3. DashboardPreview - browser-frame mock of dashboard stats
+4. StatsRow - two equal cards with big numbers (200+, 15+)
+5. Features - four feature cards with icon chips
+6. HowItWorks - three-step process visualization
+7. FinalCta - indigo gradient banner with CTA
+8. Footer - simple footer with sign-in link

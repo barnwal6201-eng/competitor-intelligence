@@ -1,8 +1,10 @@
 # Competitor Intelligence Scraper & Battlecard Agent
 
-Phases 1–9 of the PRD (v1.1, section 23) are done, plus the Phase 12 full UI
-redesign — built before Phases 10/11 at the user's request ("build the whole
-ui first"). Nothing is faked here — every screen shows real data from the backend.
+All 11 phases of the PRD (v1.1, section 23) are done, plus the Phase 12
+full UI redesign — built before Phases 10/11 at the user's request
+("build the whole ui first"). Nothing is faked here — every screen shows
+real data from the backend. Phase 11 (testing, security, deployment) is
+the final phase.
 
 - **Phase 1:** project setup and frontend-backend communication.
 - **Phase 2:** database models + register/login with bcrypt and HTTP-only cookies
@@ -30,7 +32,9 @@ ui first"). Nothing is faked here — every screen shows real data from the back
 
 ## Stack (PRD sections 2 and 19)
 
-- Frontend: Next.js 14 (App Router) + TypeScript + Tailwind CSS. **No Vite**, as the PRD requires.
+- Frontend: Next.js 14 (App Router) + TypeScript + MUI (Material UI) +
+  Framer Motion. Tailwind was removed in the Phase 12 redesign; the
+  theme lives in `frontend/theme.ts`. **No Vite**, as the PRD requires.
 - Backend: Express.js + TypeScript, separate from the frontend.
 - Database: MongoDB via Mongoose (Atlas in real use).
 - Auth: bcryptjs password hashing (pure JavaScript — native `bcrypt` often fails
@@ -42,6 +46,8 @@ ui first"). Nothing is faked here — every screen shows real data from the back
 
 ```
 competitor-intelligence/
+  render.yaml           # Phase 11: Render Blueprint (API + worker + Redis)
+  README.md
   frontend/
     app/
       page.tsx              # Phase 1 setup-check page (real backend health)
@@ -56,37 +62,47 @@ competitor-intelligence/
       (dashboard)/competitors/[id]/edit/page.tsx
       (dashboard)/competitors/CompetitorForm.tsx  # shared add/edit form
       (dashboard)/intelligence/page.tsx     # Phase 5: intelligence feed
+      (dashboard)/battlecards/...           # Phase 7: battlecard list + detail
+      (dashboard)/integrations/page.tsx     # Phase 10: Notion/Salesforce connect
     components/
-      ChangeCard.tsx                    # Phase 5: one detected change card
-    middleware.ts           # redirects /dashboard to /login without a token cookie
-    services/               # api.ts (health), auth.ts (register/login/logout/me),
-                            # competitors.ts (Phase 3 CRUD calls),
-                            # scans.ts (Phase 4 scan + snapshots),
-                            # changes.ts (Phase 5 changes + feed),
-                            # analysis.ts (Phase 6 analyse + history)
+      ChangeCard.tsx, BattlecardView.tsx, AppShell.tsx, ui.tsx, motion.tsx
+    theme.ts            # Phase 12: MUI theme (Tailwind was removed)
+    middleware.ts       # Phase 11: redirects all protected routes to /login without a token cookie
+    services/           # api.ts (health), auth.ts, competitors.ts, scans.ts,
+                        # changes.ts, analysis.ts, battlecards.ts, dashboard.ts,
+                        # jobs.ts (Phase 9), integrations.ts (Phase 10)
     types/
   backend/
+    Dockerfile          # Phase 11: production image (node dist/server.js)
+    .dockerignore
+    DEPLOYMENT.md       # Phase 11: full Render + Atlas guide
+    .env.example
     src/
-      config/       # env.ts, db.ts
-      models/       # User, Organization, Competitor (Phase 2), Snapshot (Phase 4),
-                    # Change (Phase 5), Analysis (Phase 6)
-      controllers/  # authController.ts, competitorController.ts (Phase 3),
-                    # scanController.ts (Phase 4), changeController.ts (Phase 5),
-                    # analysisController.ts (Phase 6)
-      routes/       # health.ts, auth.ts, competitors.ts (Phase 3 + 4 + 5 + 6),
-                    # changes.ts (Phase 5 feed)
-      middleware/   # auth.ts (requireAuth)
+      config/       # env.ts, db.ts, redis.ts (Phase 9)
+      models/       # User, Organization, Competitor, Snapshot, Change,
+                    # Analysis, Battlecard, BattlecardVersion, ScanJob (Phase 9),
+                    # Integration (Phase 10)
+      controllers/  # auth, competitor, scan, change, analysis, battlecard,
+                    # dashboard, job (Phase 9), integration (Phase 10)
+      routes/       # health, auth, competitors, changes, battlecards,
+                    # dashboard, jobs, integrations
+      middleware/   # auth.ts (requireAuth), rateLimits.ts (Phase 11)
       validators/   # auth.ts, competitor.ts (Zod schemas)
-      ai/           # Phase 6: openaiClient.ts (transport), analyzer.ts
-                    # (prompt + Zod validation of the structured response)
+      ai/           # Phase 6: openaiClient.ts (Groq transport), analyzer.ts
       changes/      # Phase 5: detector (pure snapshot comparison)
+      battlecards/  # Phase 7: composer
       scrapers/     # Phase 4: fetcher (SSRF + robots.txt), pricing, changelog,
                     # careers, reviews scrapers, Playwright fallback, scan runner
-                    # (Phase 5: the scan runner stores detected changes)
+      queues/       # Phase 9: scanQueue.ts (BullMQ)
+      workers/      # Phase 9: scanWorker.ts
+      integrations/ # Phase 10: crypto.ts, notionClient.ts, notionBlocks.ts,
+                    # salesforceClient.ts, salesforcePayload.ts
       utils/        # password.ts, jwt.ts, cookies.ts
-      app.ts        # CORS with credentials, routes, 404, central error handler
-      server.ts
-    .env.example
+      app.ts        # CORS with credentials, helmet headers, routes, 404,
+                    # central error handler
+      server.ts     # API entry (npm start)
+      worker.ts     # worker entry (npm run worker)
+    tests/          # Phase 11: full suite — `npm test` (see tests/README.md)
 ```
 
 ## Prerequisites
@@ -99,7 +115,10 @@ competitor-intelligence/
   3. Network Access: allow your IP (or `0.0.0.0/0` for testing).
   4. Connect > Drivers > copy the connection string.
   5. Paste it as `MONGODB_URI` in `backend/.env`.
-- No Redis, OpenAI key, Notion or Salesforce needed yet — those are later phases.
+- No Redis, Groq key, Notion or Salesforce is required — each is
+  optional and the app degrades gracefully without it (scans run
+  synchronously without Redis; analysis returns 503 without a Groq key;
+  integrations simply stay disconnected).
 
 ## Run it (Windows, PowerShell — two terminals)
 
@@ -215,17 +234,27 @@ run only when their URL is set. Each page is fetched with Axios and parsed
 with Cheerio. Pages are normalized to text and hashed (SHA-256) — an
 unchanged page produces no new snapshot, which is exactly what change
 detection (Phase 5) compares against.
-- **Phase 6:** AI analysis — OpenAI (gpt-4o-mini by default) analyses the
-  newest unanalysed changes and returns structured JSON: summary,
-  implications, strengths, weaknesses, suggested sales responses, talking
-  points, and a confidence indicator. Responses are validated with Zod
-  before saving; the prompt forbids inventing facts; every analysis stores
-  the source changes it was based on and the UI labels it AI-generated.
-  Manual trigger only (each run costs API credits); without an
-  OPENAI_API_KEY the app keeps working and analysis returns 503 with setup
-  instructions. Live-tested with a stubbed OpenAI client and a real
-  MongoDB: 45 checks passed (prompt, schema validation, client errors,
-  controller org scoping, no-key behaviour).
+- **Phase 6:** AI analysis — Groq (openai/gpt-oss-120b by default, free
+  key) analyses the newest unanalysed changes and returns structured
+  JSON: summary, implications, strengths, weaknesses, suggested sales
+  responses, talking points, and a confidence indicator. Responses are
+  validated with Zod before saving; the prompt forbids inventing facts;
+  every analysis stores the source changes it was based on and the UI
+  labels it AI-generated. Manual trigger only (each run calls the Groq
+  API); without an OPENAI_API_KEY the app keeps working and analysis
+  returns 503 with setup instructions. Live-tested with a stubbed Groq
+  client and a real MongoDB: 45 checks passed (prompt, schema validation,
+  client errors, controller org scoping, no-key behaviour). The Phase 11
+  suite re-tests all of this against a mock Groq server (712 checks
+  total across all phases).
+- **Phase 10:** Notion / Salesforce integrations (OAuth, encrypted
+  tokens, push battlecards and changes) — live-tested 42/42 against mock
+  servers. See the "Phase 10" section below.
+- **Phase 11:** full test suite (`npm test` in `backend/` — 712 checks,
+  run twice: without Redis and with Redis), security pass (SSRF fixes,
+  helmet headers, rate limits, production cookie + JWT rules), and
+  production deployment (Render + Atlas). See the "Phase 11"
+  section below — the final phase.
 
 Safety rules (PRD sections 9 and 20): only public http(s) URLs are fetched.
 Private addresses (localhost, private LAN ranges, cloud metadata
@@ -292,8 +321,9 @@ a removed job, a removed changelog entry, and a new ordinary review are
 
 ## What is NOT done yet (deliberately)
 
-- No battlecards yet — Phase 7 generates them from the analyses.
-- No dashboard charts, no Redis/BullMQ jobs, no Notion/Salesforce — Phase 8–10.
+- Nothing — all 11 phases plus the Phase 12 UI redesign are done.
+  Phase 11 (test suite, security pass, deployment) is the final phase;
+  see its section at the end of this file.
 
 ## How to explain Phase 2 in an internship review
 
@@ -353,7 +383,7 @@ a removed job, a removed changelog entry, and a new ordinary review are
 
 | Method & path | Result |
 |---|---|
-| POST `/api/competitors/:id/analyze` | 200, runs OpenAI over the competitor's newest unanalysed changes (max 20) and stores the structured analysis. Body: optional `{ changeIds: [...] }` to analyse exactly those changes. Returns `{ analysis: null, message }` when everything is already analysed. 503 when no `OPENAI_API_KEY` is set, 502 when OpenAI errors or returns an invalid response |
+| POST `/api/competitors/:id/analyze` | 200, runs Groq over the competitor's newest unanalysed changes (max 20) and stores the structured analysis. Body: optional `{ changeIds: [...] }` to analyse exactly those changes. Returns `{ analysis: null, message }` when everything is already analysed. 503 when no `OPENAI_API_KEY` is set, 502 when Groq errors or returns an invalid response |
 | GET `/api/competitors/:id/analyses` | 200, analysis history for the competitor, newest first. Optional `?limit=` (default 10, max 50) |
 | GET `/api/competitors/:id/analyses/:analysisId` | 200, one analysis |
 
@@ -365,15 +395,17 @@ keys: `summary`, `implications`, `strengths`, `weaknesses`,
 `suggestedResponses`, `talkingPoints`, `confidence` (high/medium/low).
 The response is validated with Zod before anything is saved; a bad
 response is a 502 and nothing is stored. Each analysis records the model
-used (`gpt-4o-mini` by default, `OPENAI_MODEL` overrides it) and the token
+used (`openai/gpt-oss-120b` by default, `OPENAI_MODEL` overrides it) and the token
 usage, plus the source changes it was based on, so the summary can always
 be checked against the real changes.
 
-Setup: get a key at https://platform.openai.com/api-keys, add
-`OPENAI_API_KEY=...` to `backend/.env`, restart the backend. Note that a
-ChatGPT subscription does not include API credits — the API needs its own
-billing on the same OpenAI account. Analysis is a manual button press,
-not automatic after a scan, because each run costs API credits.
+Setup: get a free key at https://console.groq.com (API Keys), add
+`OPENAI_API_KEY=...` to `backend/.env`, restart the backend. (The variable
+names still say OPENAI_ because the code was written for OpenAI first;
+they now hold the Groq key and model. Groq's free tier covers this use;
+a ChatGPT subscription does not include API credits and is not needed
+here.) Analysis is a manual button press,
+not automatic after a scan, because each run calls the AI API, so the user decides when to spend it.
 
 ## Verify Phase 6 works
 
@@ -401,7 +433,7 @@ not automatic after a scan, because each run costs API credits.
 - "Verified facts and AI interpretation stay separate: the analysis stores
   the source changes next to the AI text, and the UI labels the whole
   thing AI-generated so nobody mistakes it for scraped data."
-- "Analysis is manual because it costs money — each run uses OpenAI
+- "Analysis is manual because it costs money — each run uses Groq
   credits, so the user decides when to spend them. Phase 9 automates it
   as a background job."
 
@@ -462,12 +494,6 @@ editable, cross-org 404, unauthenticated 401).
   change, they rescan — they can't type a fake price into the card."
 - "Every save is a new version and the old one is frozen, so you can
   always prove what the battlecard said on the day of a call."
-
-## Next step: Phase 8
-
-Full dashboard and analytics — the home page becomes a real overview
-(changes over time, most active competitors, price-move counts) instead
-of the minimal placeholder it is now.
 
 ## Phase 8: Dashboard and analytics (the home page, finished)
 
@@ -568,8 +594,7 @@ hanging the request forever (BullMQ's connections retry indefinitely
 on their own).
 
 **What is NOT in Phase 9:** automatic AI analysis after each scan
-(analysis stays manual, Phase 6 — it costs Groq/OpenAI credits on
-every run), and notifications (no email/Slack alerts yet). Those are
+(analysis stays manual, Phase 6 — each run calls the Groq API), and notifications (no email/Slack alerts yet). Those are
 not part of this phase.
 
 **Run it:** install Redis and start it (`redis-server`, port 6379),
@@ -599,8 +624,8 @@ Every page rebuilt with one consistent design system — sidebar navigation
 (Dashboard / Competitors / Intelligence / Battlecards), workspace + user in
 the sidebar footer, shared cards, badges, buttons, and empty states
 (`frontend/components/ui.tsx`, `frontend/components/AppShell.tsx`). Indigo
-accent kept throughout; no new dependencies (Lucide icons, Tailwind, plain
-divs — the 14-day chart is still div-based, no chart library).
+accent kept throughout; MUI v6 + Framer Motion (the 14-day chart is still
+div-based, no chart library).
 
 - **App shell** — fixed sidebar on desktop, compact top bar with pill nav
   on mobile. The dashboard layout still guards with `await cookies()`
@@ -623,8 +648,172 @@ divs — the 14-day chart is still div-based, no chart library).
 - No backend logic changed in this phase. All numbers still come from the
   real API; empty states stay honest.
 
-## Next step: Phase 10
+## Phase 10 — Notion / Salesforce integrations
 
-Notion / Salesforce integrations — push battlecards and detected
-changes into the tools sales teams already use, so the intelligence
-leaves this app instead of living only inside it.
+The intelligence leaves the app: a battlecard or a detected change can
+be pushed into the tools sales teams already use, from the battlecard
+page, from a change card in the intelligence feed, or after connecting
+on the Integrations page (`/integrations`, also in the sidebar).
+
+- **Integration model** (`backend/src/models/Integration.ts`) — one
+  connected account per provider per organization. OAuth tokens are
+  stored **encrypted** (AES-256-GCM, `INTEGRATION_ENCRYPTION_KEY` in
+  `backend/.env` — connecting without it is refused with a plain
+  message), never plain text, and no endpoint ever returns them.
+- **Notion** (`backend/src/integrations/notionClient.ts`,
+  `notionBlocks.ts`) — OAuth (public integration, `owner=user`),
+  then push a battlecard as a Notion page (12 sections as blocks,
+  AI sections labelled) or a change as a short page, under a parent
+  page the user picks once — the parent page id is remembered on the
+  integration. The parent page must be shared with the integration in
+  Notion (… → Add connections). Needs `NOTION_CLIENT_ID` /
+  `NOTION_CLIENT_SECRET` / `NOTION_REDIRECT_URI` (create the
+  integration at notion.so/my-integrations).
+- **Salesforce** (`backend/src/integrations/salesforceClient.ts`,
+  `salesforcePayload.ts`) — OAuth web-server flow against a Connected
+  App (`api` + `refresh_token` scopes), then push a battlecard or a
+  change as a **Task** on the rep's own activity timeline (no Account
+  needed). Access tokens expire (~2h); the client refreshes
+  proactively when the stored expiry has passed, and once more on a
+  failed push, before giving up. Needs `SALESFORCE_CLIENT_ID` /
+  `SALESFORCE_CLIENT_SECRET` / `SALESFORCE_REDIRECT_URI` (a free
+  Developer Edition org works for testing).
+- **Endpoints** (`backend/src/routes/integrations.ts`,
+  `backend/src/controllers/integrationController.ts`) —
+  `GET /api/integrations`, `GET /api/integrations/:provider/authorize`
+  (signed `state` JWT, 10 min), `GET /:provider/callback` (public,
+  verifies state, redirects to the frontend Integrations page),
+  `POST /:provider/disconnect`, `POST /notion/push/battlecard/:id`,
+  `POST /notion/push/change/:id`, `POST /salesforce/push/battlecard/:id`,
+  `POST /salesforce/push/change/:id`. Pushes check the resource first
+  (a competitor/change outside your org is a 404 even when nothing is
+  connected), then the connection. No new npm dependencies — both
+  clients are plain fetch, like the Phase 6 AI client.
+- **Frontend** — Integrations settings page (status, workspace,
+  last push, setup steps when unconfigured), push buttons on the
+  battlecard page (Notion parent page id input) and on change cards
+  in the intelligence feed, sidebar link.
+- **Live tests: 42/42** (mock Notion + Salesforce servers on
+  localhost — no real accounts needed): full OAuth for both providers
+  (bad state rejected, token stored encrypted and decrypts back),
+  battlecard + change pushes to both (Notion page carries the pricing
+  plans, Salesforce Task carries the subject + pricing), Salesforce
+  token refresh after forced expiry, org isolation (second org sees
+  nothing connected and gets 404s), disconnect blocks further pushes.
+  A real bug found by the tests and fixed in Phase 9's worker: the
+  worker could pick a manual scan up before `enqueueScan` had written
+  its ScanJob record, leaving an orphaned "queued" record — the worker
+  now waits up to 2s for the manual record to appear before creating
+  one. Frontend production build passes.
+
+What is **NOT** in Phase 10: no automatic push after a scan or a
+battlecard generate (pushing is always a deliberate click), no
+Salesforce Account/Opportunity linking, and no syncing changes back
+from Notion or Salesforce into this app.
+
+## Phase 11: Testing, security, and deployment (the final phase)
+
+### Test suite — `npm test` in `backend/`
+
+One command runs the whole suite (`tsx tests/run-all.ts`, see
+`backend/tests/README.md`): it starts a local MongoDB itself if needed,
+builds the backend, starts four mock servers (fake competitor site, mock
+Groq, mock Notion, mock Salesforce — plain `node:http`, no new
+dependencies), then runs every area **twice** — once without Redis
+(scans must fall back to synchronous and still pass) and once with
+Redis (jobs must enqueue as 202 and complete) — each mode with a fresh
+backend and a freshly dropped test database. It prints per-area counts
+and a final TOTAL, and exits non-zero on any failure.
+
+**Verified 2026-11-23: TOTAL 712/712 — no-Redis 350/350, with-Redis
+362/362.**
+
+| Area | Checks | What it covers |
+|---|---|---|
+| auth | 26 | register/login/me/logout, duplicate 409, validation 400, generic wrong-password 401, `passwordHash` never returned |
+| competitors | 34 | CRUD, validation, duplicate website 409 per org, search/filter, cross-org 404s, 401s |
+| scraping | 31 | baseline snapshots, unchanged dedupe, changed-price re-snapshot, robots-blocked, per-source outcomes (mock site) |
+| ssrf | 14 | localhost/private/metadata/IPv6-mapped refusals, redirect-to-private refusal, robots allow/disallow |
+| changes | 32 | detector unit tests (significance, identity matching, reorder = no change) + end-to-end rescan changes |
+| analysis | 35 | mock Groq: stored analysis with all 7 keys + sources, no-changes null, no-key 503, invalid JSON/wrong shape/401 → 502 with nothing saved |
+| battlecards | 34 | generate 201 then 409, 400 without snapshots, regenerate version bump, editable-sections-only, frozen versions |
+| dashboard | 39 | exact counts, 14-day zero-filled series, 7-day window, top competitors, price moves, scan health, empty-org zeros |
+| jobs | 12 / 24 | no-Redis: sync fallback writes a ScanJob; with-Redis: 202 + poll to completed, pause/resume/frequency rescheduling |
+| integrations | 53 | mock OAuth both providers, bad state rejected, tokens stored encrypted (decrypt back, never plain), pushes, Salesforce refresh, disconnect blocks pushes |
+| security | 40 | cross-org 404s on every resource, 401s on every protected route, helmet headers, 413 on oversized body, production cookie flags, production without `JWT_SECRET` refuses to start, rate limits |
+
+### Security pass — what the audit found and fixed
+
+The audit read every route and controller. Org isolation was already
+correct everywhere (every query filters by `organizationId`, or derives
+from an org-verified parent), no hardcoded secrets were found, and
+auth (bcrypt, `select: false` hash, generic login errors, Zod) was
+sound. These gaps were found and fixed in this phase:
+
+- **SSRF via redirect (high):** the fetcher followed HTTP redirects
+  with axios and never re-validated the target — a public URL
+  redirecting to `169.254.169.254` or localhost would have been fetched.
+  Redirects are now followed by hand, max 3 hops, every hop re-checked
+  (SSRF + robots.txt).
+- **SSRF via IPv4-mapped IPv6 (high):** `::ffff:127.0.0.1` was not
+  recognised as private, and Node's `URL.hostname` keeps the brackets
+  on IPv6 literals (`[::ffff:7f00:1]`), so `net.isIP()` rejected the
+  whole check. Both are fixed: brackets are stripped first, mapped
+  and expanded loopback forms are unwrapped and checked.
+- **Auth cookie in production (high for deployment):** the cookie was
+  `SameSite=Lax`, which blocks it on cross-site fetch — with the
+  frontend and API both on Render, login would have silently
+  failed. It is now `SameSite=None` + `Secure` in production (Lax in
+  development, where both run on localhost).
+- **JWT secret in production (medium):** the backend used to start with
+  a known dev fallback secret when `JWT_SECRET` was unset. In
+  production it now refuses to start without one.
+- **Security headers (medium):** helmet is now on every response
+  (`X-Content-Type-Options`, `X-Frame-Options`, HSTS in production,
+  no `X-Powered-By`). JSON bodies are capped at 100kb (oversized
+  bodies get 413, not 500).
+- **Rate limits (medium):** login is now 30 attempts per 15 minutes
+  per IP (was 100, shared with register); register stays 100 per
+  15 minutes; a new per-user limiter (30 per 15 minutes) covers the
+  expensive endpoints — manual scans, AI analysis, Notion/Salesforce
+  pushes (`backend/src/middleware/rateLimits.ts`).
+- **Frontend route guard (low):** the Next.js middleware only matched
+  `/dashboard/*`; it now covers `/competitors`, `/intelligence`,
+  `/battlecards`, and `/integrations` too (the dashboard layout's
+  server-side cookie check was already guarding them).
+
+Known limitation (documented, not fixed): the SSRF check resolves the
+hostname and checks the address before fetching, but DNS could change
+between the lookup and the connect (TOCTOU / DNS rebinding). Pinning
+the resolved IP through the TLS handshake would be needed to close
+that fully; the current check stops every direct private-address and
+redirect attack.
+
+### Deployment — Render + Atlas (whole project on Render)
+
+Production stack: **MongoDB Atlas** (database) + **Render** (Next.js
+frontend + API web service + scan worker + Redis). All free tier. Full
+step-by-step guide: `backend/DEPLOYMENT.md`.
+
+- `render.yaml` — Render Blueprint: `competitor-intelligence-frontend`
+  (`npm run start`), `competitor-intelligence-api`
+  (`node dist/server.js`, `SCAN_WORKER_IN_PROCESS=false`),
+  `competitor-intelligence-worker` (`node dist/worker.js`), and a free
+  Redis Key Value service wired in as `REDIS_URL`. All secrets are
+  `sync: false` (Render prompts for them in the dashboard).
+  `NEXT_PUBLIC_API_URL` is wired from the API service automatically
+  (`fromService`); `FRONTEND_URL` is pre-filled with the frontend
+  service's expected URL — correct it if the dashboard shows a
+  different subdomain, then redeploy the API + worker.
+- `backend/Dockerfile` — production image (`node:20-alpine`, `npm ci`,
+  build, prune dev deps, non-root, `node dist/server.js`); the same
+  image runs the worker with the command overridden.
+- Deploy order: Atlas cluster first → Render Blueprint (fill in the
+  secrets) → correct `FRONTEND_URL` if needed and redeploy → register
+  and Scan now to verify. Notion/Salesforce redirect URIs must be
+  updated to the public backend URL
+  (`/api/integrations/notion/callback`,
+  `/api/integrations/salesforce/callback`).
+
+The user deploys it himself — nothing in this repo creates an account
+or deploys anything.

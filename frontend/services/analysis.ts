@@ -1,7 +1,8 @@
+import { resolveApiUrl } from "./apiUrl";
 import type { Analysis } from "@/types";
 
 // AI analysis API calls (Phase 6). Every call sends the httpOnly auth cookie.
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = resolveApiUrl();
 
 async function handleResponse<T>(res: Response): Promise<T> {
   const data = await res.json().catch(() => ({}));

@@ -1,3 +1,4 @@
+import { resolveApiUrl } from "./apiUrl";
 import type {
   Battlecard,
   BattlecardListItem,
@@ -6,7 +7,7 @@ import type {
 } from "@/types";
 
 // Battlecard API calls (Phase 7). Every call sends the httpOnly auth cookie.
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = resolveApiUrl();
 
 async function handleResponse<T>(res: Response): Promise<T> {
   const data = await res.json().catch(() => ({}));

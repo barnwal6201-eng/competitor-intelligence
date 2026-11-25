@@ -1,8 +1,10 @@
-// Phase 6: a thin OpenAI client — plain fetch against the Chat Completions
-// API, no extra SDK dependency. The key is read from the environment at
-// call time (never from the frontend, never logged), and the model is
-// configurable via OPENAI_MODEL (default gpt-4o-mini: cheap and fast
-// enough for short change summaries).
+// Phase 6: a thin AI client — plain fetch against an OpenAI-compatible
+// Chat Completions API, no extra SDK dependency. The provider is Groq
+// (https://api.groq.com/openai/v1): the key is read from the environment
+// at call time (never from the frontend, never logged), and the model is
+// configurable via OPENAI_MODEL (default openai/gpt-oss-120b). The env var
+// names still say OPENAI_ because the code was written for OpenAI first;
+// they now simply hold the Groq key and model.
 //
 // The client only does transport: it sends the prompt, enforces a timeout,
 // and turns HTTP failures into plain-English errors. What the prompt says
@@ -10,7 +12,7 @@
 // analyzer's job (see ai/analyzer.ts), so this file stays testable with a
 // stubbed fetch and needs no API key to import.
 
-const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const REQUEST_TIMEOUT_MS = 60_000;
 
 export interface ChatCompletionResult {
@@ -29,7 +31,7 @@ export class OpenAIError extends Error {
 }
 
 export function getOpenAIModel(): string {
-  return process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
+  return process.env.OPENAI_MODEL?.trim() || "openai/gpt-oss-120b";
 }
 
 export function hasOpenAIKey(): boolean {
@@ -45,7 +47,7 @@ export async function completeJson(
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) {
     throw new OpenAIError(
-      "OpenAI API key is not configured — add OPENAI_API_KEY to backend/.env and restart the backend",
+      "Groq API key is not configured — add OPENAI_API_KEY to backend/.env and restart the backend",
       503
     );
   }
@@ -54,7 +56,7 @@ export async function completeJson(
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   let res: Response;
   try {
-    res = await fetchFn(OPENAI_URL, {
+    res = await fetchFn(GROQ_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -76,27 +78,27 @@ export async function completeJson(
     });
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
-      throw new OpenAIError("OpenAI took too long to respond — try again", 502);
+      throw new OpenAIError("Groq took too long to respond — try again", 502);
     }
-    throw new OpenAIError("Could not reach OpenAI — check your network and try again", 502);
+    throw new OpenAIError("Could not reach Groq — check your network and try again", 502);
   } finally {
     clearTimeout(timeout);
   }
 
   if (!res.ok) {
     if (res.status === 401) {
-      throw new OpenAIError("OpenAI rejected the API key — check OPENAI_API_KEY in backend/.env", 502);
+      throw new OpenAIError("Groq rejected the API key — check OPENAI_API_KEY in backend/.env", 502);
     }
     if (res.status === 429) {
-      throw new OpenAIError("OpenAI rate limit reached — wait a bit and try again", 502);
+      throw new OpenAIError("Groq rate limit reached — wait a bit and try again", 502);
     }
     if (res.status === 402 || res.status === 403) {
       throw new OpenAIError(
-        "OpenAI refused the request — this usually means the API account has no billing/credits (a ChatGPT subscription does not include API credits)",
+        "Groq refused the request — check the key and the free-tier limits in your Groq console",
         502
       );
     }
-    throw new OpenAIError(`OpenAI returned HTTP ${res.status} — try again`, 502);
+    throw new OpenAIError(`Groq returned HTTP ${res.status} — try again`, 502);
   }
 
   const data = (await res.json().catch(() => ({}))) as {
@@ -106,7 +108,7 @@ export async function completeJson(
   };
   const content = data.choices?.[0]?.message?.content?.trim();
   if (!content) {
-    throw new OpenAIError("OpenAI returned an empty response — try again", 502);
+    throw new OpenAIError("Groq returned an empty response — try again", 502);
   }
   return {
     content,

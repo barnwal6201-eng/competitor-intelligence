@@ -299,3 +299,26 @@ export type ScanEnqueueResult = {
   message?: string;
   scan?: ScanSummary;
 };
+
+export type IntegrationProvider = "notion" | "salesforce";
+
+export type IntegrationInfo = {
+  provider: IntegrationProvider;
+  connected: boolean;
+  status: "connected" | "error" | null;
+  externalAccountId: string | null;
+  externalAccountName: string | null;
+  configured: boolean;
+  lastPushAt: string | null;
+  lastPushTarget: string | null;
+  lastPushKind: "battlecard" | "change" | null;
+  notionParentPageId: string | null;
+};
+
+export type IntegrationPushResult = {
+  provider: IntegrationProvider;
+  kind: "battlecard" | "change";
+  externalId: string;
+  externalUrl: string | null;
+  title: string;
+};

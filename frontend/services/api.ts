@@ -1,7 +1,8 @@
+import { resolveApiUrl } from "./apiUrl";
 import type { BackendHealth } from "@/types";
 
 // All API communication lives here, separate from UI components (PRD section 19).
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = resolveApiUrl();
 
 export function getApiUrl(): string {
   return API_URL;

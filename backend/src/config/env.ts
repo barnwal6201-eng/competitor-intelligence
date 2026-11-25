@@ -33,5 +33,9 @@ export const env = {
   redisUrl: process.env.REDIS_URL?.trim() || "redis://127.0.0.1:6379",
   scanWorkerInProcess: process.env.SCAN_WORKER_IN_PROCESS !== "false",
   scanWorkerConcurrency: Number(process.env.SCAN_WORKER_CONCURRENCY || 2),
+  // Phase 10: Notion / Salesforce OAuth. The keys are read from
+  // process.env at call time in the integration clients, not cached
+  // here, so tests can point them at mock servers per-run; these
+  // fields only document the settings (see backend/.env.example).
   isProduction: process.env.NODE_ENV === "production",
 };

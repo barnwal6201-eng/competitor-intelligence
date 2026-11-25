@@ -1,0 +1,168 @@
+# Render Blueprint — Competitor Intelligence SaaS
+# =================================================
+# The WHOLE project deploys on Render — frontend, API, worker, Redis.
+# No Vercel needed. Deploy with the Render dashboard (no CLI, no
+# account creation here):
+#   1. Push this repo to GitHub (Render deploys from a connected repo).
+#   2. Render dashboard → New → Blueprint → connect the repo.
+#      Render reads this file and creates all four services below.
+#   3. Render prompts for every secret marked `sync: false` — paste the
+#      real values there (dashboard only). NOTHING secret is in this file.
+#   4. The frontend's NEXT_PUBLIC_API_URL is wired automatically from
+#      the API service (fromService), so the two services find each
+#      other with no manual step. FRONTEND_URL is pre-filled with the
+#      frontend service's expected URL — if the dashboard shows a
+#      different subdomain, correct it on the API + worker services and
+#      redeploy them (see backend/DEPLOYMENT.md, steps 2–3).
+#
+# Services created:
+#   competitor-intelligence-frontend  Node web service  (Next.js, port from $PORT)
+#   competitor-intelligence-api       Node web service  (Express API, port from $PORT)
+#   competitor-intelligence-worker    Node background worker (BullMQ scan worker)
+#   competitor-intelligence-redis     free Redis Key Value (BullMQ queue backend)
+#
+# Plans are all free tier. Render free web services sleep after ~15 min of
+# inactivity (first request after sleep is slow); free Redis has limits —
+# see DEPLOYMENT.md section 8.
+
+services:
+  # --- Frontend ------------------------------------------------------------
+  # Next.js runs as a Node web service (not a static site: the app uses
+  # server components, middleware and cookies). Render injects PORT
+  # automatically; `next start` listens on it.
+  - type: web
+    name: competitor-intelligence-frontend
+    runtime: node
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /
+    envVars:
+      # Wired automatically from the API service below (fromService gives
+      # the bare hostname; the frontend code adds https:// — see
+      # frontend/services/apiUrl.ts). NEXT_PUBLIC_ values are baked into
+      # the frontend at build time, so this must be set before the first
+      # build — the Blueprint does that.
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: competitor-intelligence-api
+          property: host
+
+  # --- API ---------------------------------------------------------------
+  - type: web
+    name: competitor-intelligence-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: node dist/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # The API must NOT run the scan worker in-process in production —
+      # the separate worker service below does that job.
+      - key: SCAN_WORKER_IN_PROCESS
+        value: "false"
+      # Render injects PORT automatically; the backend listens on it
+      # (default 5000 locally). Do not set PORT here.
+      # FRONTEND_URL: pre-filled with the frontend service's expected
+      # URL. If the dashboard shows a different subdomain, correct it
+      # here (and on the worker) and redeploy. Until it matches the
+      # frontend URL exactly, CORS blocks the frontend and the login
+      # cookie is not accepted.
+      - key: FRONTEND_URL
+        value: https://competitor-intelligence-frontend.onrender.com
+      # Redis connection string, wired from the Key Value service below.
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: competitor-intelligence-redis
+          property: connectionString
+      # Secrets — Render prompts for these in the dashboard (sync: false
+      # means "ask me, don't read a value from this file"). Never paste
+      # a real value here.
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: INTEGRATION_ENCRYPTION_KEY
+        sync: false
+      - key: NOTION_CLIENT_ID
+        sync: false
+      - key: NOTION_CLIENT_SECRET
+        sync: false
+      - key: NOTION_REDIRECT_URI
+        sync: false
+      - key: SALESFORCE_CLIENT_ID
+        sync: false
+      - key: SALESFORCE_CLIENT_SECRET
+        sync: false
+      - key: SALESFORCE_REDIRECT_URI
+        sync: false
+      # Non-secret settings (safe to keep as plain values).
+      - key: OPENAI_MODEL
+        value: openai/gpt-oss-120b
+      - key: SCAN_WORKER_CONCURRENCY
+        value: "2"
+      - key: SALESFORCE_LOGIN_URL
+        value: https://login.salesforce.com
+
+  # --- Scan worker -------------------------------------------------------
+  - type: worker
+    name: competitor-intelligence-worker
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: node dist/worker.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SCAN_WORKER_IN_PROCESS
+        value: "false"
+      - key: FRONTEND_URL
+        value: https://competitor-intelligence-frontend.onrender.com
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: competitor-intelligence-redis
+          property: connectionString
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: INTEGRATION_ENCRYPTION_KEY
+        sync: false
+      - key: NOTION_CLIENT_ID
+        sync: false
+      - key: NOTION_CLIENT_SECRET
+        sync: false
+      - key: NOTION_REDIRECT_URI
+        sync: false
+      - key: SALESFORCE_CLIENT_ID
+        sync: false
+      - key: SALESFORCE_CLIENT_SECRET
+        sync: false
+      - key: SALESFORCE_REDIRECT_URI
+        sync: false
+      - key: OPENAI_MODEL
+        value: openai/gpt-oss-120b
+      - key: SCAN_WORKER_CONCURRENCY
+        value: "2"
+      - key: SALESFORCE_LOGIN_URL
+        value: https://login.salesforce.com
+
+  # --- Redis (BullMQ queue) ----------------------------------------------
+  # BullMQ requires noeviction: if Redis evicted queued jobs under memory
+  # pressure, scheduled scans would silently disappear.
+  - type: keyvalue
+    name: competitor-intelligence-redis
+    plan: free
+    maxmemoryPolicy: noeviction

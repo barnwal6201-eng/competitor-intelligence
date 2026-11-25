@@ -1,8 +1,9 @@
+import { resolveApiUrl } from "./apiUrl";
 import type { ScanEnqueueResult, ScanSummary, Snapshot } from "@/types";
 
 // Scan + snapshot API calls (Phase 4, Phase 9). Every call sends the
 // httpOnly auth cookie.
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = resolveApiUrl();
 
 async function handleResponse<T>(res: Response): Promise<T> {
   const data = await res.json().catch(() => ({}));

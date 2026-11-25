@@ -8,6 +8,7 @@ import changesRouter from "./routes/changes";
 import battlecardsRouter from "./routes/battlecards";
 import dashboardRouter from "./routes/dashboard";
 import jobsRouter from "./routes/jobs";
+import integrationsRouter from "./routes/integrations";
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use("/api/changes", changesRouter);
 app.use("/api/battlecards", battlecardsRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/jobs", jobsRouter);
+app.use("/api/integrations", integrationsRouter);
 
 app.use((_req, res) => {
   res.status(404).json({ error: "Not found" });

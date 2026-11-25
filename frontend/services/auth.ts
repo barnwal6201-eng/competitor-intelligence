@@ -1,6 +1,7 @@
+import { resolveApiUrl } from "./apiUrl";
 import type { AuthUser } from "@/types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = resolveApiUrl();
 
 async function handleResponse(res: Response): Promise<{ user: AuthUser }> {
   const data = await res.json().catch(() => ({}));

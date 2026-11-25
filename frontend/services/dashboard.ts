@@ -1,7 +1,8 @@
+import { resolveApiUrl } from "./apiUrl";
 import type { DashboardOverview } from "@/types";
 
 // Dashboard API calls (Phase 8). Every call sends the httpOnly auth cookie.
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = resolveApiUrl();
 
 async function handleResponse<T>(res: Response): Promise<T> {
   const data = await res.json().catch(() => ({}));

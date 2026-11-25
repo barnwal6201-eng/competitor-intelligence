@@ -46,6 +46,18 @@ async function processScanJob(job: Job<ScanJobData>): Promise<{ scannedAt: strin
   // id, but each firing has its own timestamp, so every run gets its
   // own record and the scan-jobs list shows scheduled runs too.
   let record = await ScanJob.findOne({ bullmqJobId: String(job.id) });
+  if (!record && trigger === "manual") {
+    // Race: enqueueScan adds the BullMQ job to Redis BEFORE it writes
+    // the ScanJob record, and the worker can pick the job up first —
+    // the first scan won the race, the second scan lost it and the
+    // worker created a duplicate record, leaving the real one stuck
+    // on "queued" forever. Wait briefly for the record to appear.
+    // (Scheduled jobs never have a pre-created record, so no wait.)
+    for (let i = 0; i < 10 && !record; i++) {
+      await new Promise((r) => setTimeout(r, 200));
+      record = await ScanJob.findOne({ bullmqJobId: String(job.id) });
+    }
+  }
   if (!record) {
     record = await ScanJob.create({
       organizationId: new mongoose.Types.ObjectId(organizationId),

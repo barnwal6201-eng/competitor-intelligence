@@ -105,12 +105,12 @@ export async function analyzeChanges(
   try {
     parsed = JSON.parse(result.content);
   } catch {
-    throw new OpenAIError("OpenAI returned a response that is not valid JSON — try again", 502);
+    throw new OpenAIError("Groq returned a response that is not valid JSON — try again", 502);
   }
   const validated = AnalysisJsonSchema.safeParse(parsed);
   if (!validated.success) {
     throw new OpenAIError(
-      "OpenAI returned a response in the wrong shape — try again",
+      "Groq returned a response in the wrong shape — try again",
       502
     );
   }
