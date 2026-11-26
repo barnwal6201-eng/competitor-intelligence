@@ -6,8 +6,15 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
+import CircularProgress from "@mui/material/CircularProgress";
+import LinkMui from "@mui/material/Link";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import { loginUser } from "@/services/auth";
-import { btnPrimary, inputClass, labelClass } from "@/components/ui";
 
 const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email("Please provide a valid email address"),
@@ -37,30 +44,53 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-      <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Welcome back</h1>
-      <p className="mt-1 text-sm text-slate-600">Sign in to your Competitor Intelligence workspace.</p>
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-5">
-        <div>
-          <label htmlFor="email" className={labelClass}>Email</label>
-          <input id="email" type="email" autoComplete="email" placeholder="you@company.com" {...register("email")}
-            className={inputClass} />
-          {errors.email && <p className="mt-1 text-sm text-red-700">{errors.email.message}</p>}
-        </div>
-        <div>
-          <label htmlFor="password" className={labelClass}>Password</label>
-          <input id="password" type="password" autoComplete="current-password" {...register("password")}
-            className={inputClass} />
-          {errors.password && <p className="mt-1 text-sm text-red-700">{errors.password.message}</p>}
-        </div>
-        {serverError && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{serverError}</p>}
-        <button type="submit" disabled={isSubmitting} className={`${btnPrimary} w-full`}>
-          {isSubmitting ? "Signing in…" : "Sign in"}
-        </button>
-      </form>
-      <p className="mt-6 text-center text-sm text-slate-600">
-        No account yet? <Link href="/register" className="font-medium text-indigo-600 hover:underline">Create one</Link>
-      </p>
-    </div>
+    <Card>
+      <Box sx={{ p: 4 }}>
+        <Typography variant="h5" component="h1">Welcome back</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          Sign in to your Competitor Intelligence workspace.
+        </Typography>
+        <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 3, display: "flex", flexDirection: "column", gap: 2.5 }}>
+          <TextField
+            id="email"
+            label="Email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@company.com"
+            fullWidth
+            {...register("email")}
+            error={!!errors.email}
+            helperText={errors.email?.message}
+          />
+          <TextField
+            id="password"
+            label="Password"
+            type="password"
+            autoComplete="current-password"
+            fullWidth
+            {...register("password")}
+            error={!!errors.password}
+            helperText={errors.password?.message}
+          />
+          {serverError && <Alert severity="error">{serverError}</Alert>}
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            variant="contained"
+            size="large"
+            fullWidth
+            startIcon={isSubmitting ? <CircularProgress size={18} color="inherit" /> : undefined}
+          >
+            {isSubmitting ? "Signing in…" : "Sign in"}
+          </Button>
+        </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 3, textAlign: "center" }}>
+          No account yet?{" "}
+          <LinkMui component={Link} href="/register" sx={{ fontWeight: 600 }}>
+            Create one
+          </LinkMui>
+        </Typography>
+      </Box>
+    </Card>
   );
 }

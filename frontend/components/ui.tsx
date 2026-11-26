@@ -1,52 +1,74 @@
+// Shared design-system pieces — MUI glassmorphic version. Same export
+// names as the Phase 12 Tailwind version, so pages keep their structure;
+// only the rendering changed. Every component is presentation-only: no
+// data fetching, no mock content, no invented numbers.
+
 import Link from "next/link";
 import type { ReactNode } from "react";
-
-// Shared design-system pieces for the Phase 12 UI. Every component here
-// is presentation-only: no data fetching, no mock content, no invented
-// numbers. Pages pass in real values from the API.
-
-export const btnPrimary =
-  "inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
-
-export const btnSecondary =
-  "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
-
-export const btnDanger =
-  "inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-700 shadow-sm transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
-
-export const btnGhost =
-  "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500";
-
-export const inputClass =
-  "mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100";
-
-export const labelClass = "block text-sm font-medium text-slate-700";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import CardMui from "@mui/material/Card";
+import Chip from "@mui/material/Chip";
+import Typography from "@mui/material/Typography";
+import MuiLink from "@mui/material/Link";
 
 type Tone = "neutral" | "green" | "red" | "amber" | "indigo" | "slate";
 
-const toneClass: Record<Tone, string> = {
-  neutral: "bg-slate-100 text-slate-700 ring-slate-200",
-  green: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  red: "bg-red-50 text-red-700 ring-red-200",
-  amber: "bg-amber-50 text-amber-800 ring-amber-200",
-  indigo: "bg-indigo-50 text-indigo-700 ring-indigo-200",
-  slate: "bg-slate-100 text-slate-600 ring-slate-200",
+const toneColor: Record<Tone, "default" | "success" | "error" | "warning" | "primary" | "info"> = {
+  neutral: "default",
+  green: "success",
+  red: "error",
+  amber: "warning",
+  indigo: "primary",
+  slate: "default",
 };
 
 export function Badge({ tone = "neutral", children }: { tone?: Tone; children: ReactNode }) {
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${toneClass[tone]}`}
-    >
-      {children}
-    </span>
+    <Chip
+      label={children}
+      color={toneColor[tone]}
+      size="small"
+      sx={{
+        fontWeight: 600,
+        backgroundColor:
+          tone === "indigo"
+            ? "rgba(94, 106, 210, 0.14)"
+            : tone === "green"
+              ? "rgba(5, 150, 105, 0.12)"
+              : tone === "red"
+                ? "rgba(220, 38, 38, 0.10)"
+                : tone === "amber"
+                  ? "rgba(217, 119, 6, 0.12)"
+                  : "rgba(100, 116, 139, 0.14)",
+        color:
+          tone === "indigo"
+            ? "#4f46e5"
+            : tone === "green"
+              ? "#047857"
+              : tone === "red"
+                ? "#b91c1c"
+                : tone === "amber"
+                  ? "#b45309"
+                  : "#475569",
+      }}
+    />
   );
 }
 
-export function Card({ className = "", children }: { className?: string; children: ReactNode }) {
-  return (
-    <div className={`rounded-xl border border-slate-200 bg-white shadow-sm ${className}`}>{children}</div>
-  );
+// Glass card — the MUI Card already carries the glass look from the
+// theme. Pages add their own inner padding (usually a Box with p: 3),
+// so this wrapper adds none. `disablePadding` is kept for compatibility
+// with pages that pass it; it changes nothing.
+export function Card({
+  children,
+  sx,
+}: {
+  children: ReactNode;
+  sx?: object;
+  disablePadding?: boolean;
+}) {
+  return <CardMui sx={{ ...sx }}>{children}</CardMui>;
 }
 
 export function PageHeader({
@@ -61,14 +83,26 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-4">
-      <div className="min-w-0">
-        {eyebrow ? <div className="text-sm font-medium text-indigo-600">{eyebrow}</div> : null}
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{title}</h1>
-        {description ? <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">{description}</p> : null}
-      </div>
-      {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
-    </div>
+    <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 2 }}>
+      <Box sx={{ minWidth: 0 }}>
+        {eyebrow ? (
+          <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600 }}>
+            {eyebrow}
+          </Typography>
+        ) : null}
+        <Typography variant="h4" component="h1" sx={{ mt: 0.5, fontSize: { xs: "1.6rem", sm: "2rem" } }}>
+          {title}
+        </Typography>
+        {description ? (
+          <Typography variant="body1" color="text.secondary" sx={{ mt: 1, maxWidth: 640 }}>
+            {description}
+          </Typography>
+        ) : null}
+      </Box>
+      {actions ? (
+        <Box sx={{ display: "flex", flexShrink: 0, flexWrap: "wrap", gap: 1 }}>{actions}</Box>
+      ) : null}
+    </Box>
   );
 }
 
@@ -84,21 +118,44 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center px-6 py-10 text-center">
+    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", px: 3, py: 5, textAlign: "center" }}>
       {icon ? (
-        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-500">{icon}</div>
+        <Box
+          sx={{
+            display: "flex",
+            height: 44,
+            width: 44,
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "50%",
+            background: "rgba(94, 106, 210, 0.12)",
+            color: "primary.main",
+          }}
+        >
+          {icon}
+        </Box>
       ) : null}
-      <h3 className="mt-4 text-sm font-semibold text-slate-900">{title}</h3>
-      {description ? <p className="mt-1 max-w-md text-sm leading-relaxed text-slate-500">{description}</p> : null}
-      {action ? <div className="mt-4">{action}</div> : null}
-    </div>
+      <Typography variant="subtitle1" sx={{ mt: 2, fontWeight: 600 }}>
+        {title}
+      </Typography>
+      {description ? (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 440 }}>
+          {description}
+        </Typography>
+      ) : null}
+      {action ? <Box sx={{ mt: 2 }}>{action}</Box> : null}
+    </Box>
   );
 }
 
 export function BackLink({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <Link href={href} className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline">
+    <MuiLink component={Link} href={href} sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, fontSize: "0.875rem", fontWeight: 600 }}>
       {children}
-    </Link>
+    </MuiLink>
   );
 }
+
+// Convenience re-export so pages can use MUI buttons without importing
+// from @mui/material every time.
+export { Button };
