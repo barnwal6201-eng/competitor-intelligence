@@ -13,5 +13,16 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  // Every protected route: the (dashboard) group lives at /dashboard,
+  // /competitors, /intelligence, /battlecards and /integrations. The
+  // dashboard layout also guards server-side (cookies check) — this
+  // middleware is the first line, the layout is the second.
+  matcher: [
+    "/dashboard",
+    "/dashboard/:path*",
+    "/competitors/:path*",
+    "/intelligence/:path*",
+    "/battlecards/:path*",
+    "/integrations/:path*",
+  ],
 };

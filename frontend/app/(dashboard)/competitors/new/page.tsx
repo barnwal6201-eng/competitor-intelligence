@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import Box from "@mui/material/Box";
 import CompetitorForm from "../CompetitorForm";
 import { createCompetitor } from "@/services/competitors";
 import { BackLink, Card, PageHeader } from "@/components/ui";
@@ -24,19 +25,21 @@ export default function NewCompetitorPage() {
   }
 
   return (
-    <div>
+    <Box>
       <PageHeader
         eyebrow={
           <BackLink href="/competitors">
-            <ArrowLeft className="h-4 w-4" /> Competitors
+            <ArrowBackIcon sx={{ fontSize: 16 }} /> Competitors
           </BackLink>
         }
         title="Add a competitor"
         description="It is saved under your organization only — no other organization can see it."
       />
-      <Card className="mt-6 max-w-3xl p-6 sm:p-8">
-        <CompetitorForm submitLabel="Add competitor" serverError={serverError} onSubmit={onSubmit} />
+      <Card sx={{ mt: 3, maxWidth: 768 }} disablePadding>
+        <Box sx={{ p: { xs: 2.5, sm: 4 } }}>
+          <CompetitorForm submitLabel="Add competitor" serverError={serverError} onSubmit={onSubmit} />
+        </Box>
       </Card>
-    </div>
+    </Box>
   );
 }

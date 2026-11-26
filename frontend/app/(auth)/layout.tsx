@@ -4,7 +4,7 @@ import Box from "@mui/material/Box";
 import RadarIcon from "@mui/icons-material/Radar";
 import Typography from "@mui/material/Typography";
 import { motion } from "framer-motion";
-import { FloatingOrbs } from "@/components/Motion";
+import { FloatingOrbs } from "@/components/motion";
 
 // MUI glass auth shell, Framer Motion edition: no side panel — the
 // sign-in / register glass card floats centered over a full-page neon

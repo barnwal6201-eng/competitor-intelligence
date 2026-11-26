@@ -1,3 +1,14 @@
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Link from "@mui/material/Link";
+import Paper from "@mui/material/Paper";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Typography from "@mui/material/Typography";
 import { categoryLabel } from "@/components/ChangeCard";
 import { Badge } from "@/components/ui";
 import type { Battlecard, ChangeCategory } from "@/types";
@@ -43,24 +54,28 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="mt-7 first:mt-0">
-      <h2 className="flex items-center gap-2 border-b border-slate-100 pb-2 text-base font-semibold text-slate-900">
-        {title}
+    <Box component="section" sx={{ mt: 3.5, "&:first-of-type": { mt: 0 } }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, borderBottom: "1px solid rgba(17,24,39,0.08)", pb: 1 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+          {title}
+        </Typography>
         {ai && <Badge tone="amber">AI-generated</Badge>}
-      </h2>
-      <div className="mt-3">{children}</div>
-    </section>
+      </Box>
+      <Box sx={{ mt: 1.5 }}>{children}</Box>
+    </Box>
   );
 }
 
 function BulletList({ items, empty }: { items: string[]; empty: string }) {
-  if (items.length === 0) return <p className="text-sm text-slate-500">{empty}</p>;
+  if (items.length === 0) return <Typography variant="body2" color="text.secondary">{empty}</Typography>;
   return (
-    <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-slate-700">
+    <Box component="ul" sx={{ m: 0, pl: 2.5, "& li": { mb: 0.75, lineHeight: 1.6 } }}>
       {items.map((item, i) => (
-        <li key={i}>{item}</li>
+        <Typography key={i} component="li" variant="body2">
+          {item}
+        </Typography>
       ))}
-    </ul>
+    </Box>
   );
 }
 
@@ -68,76 +83,75 @@ export default function BattlecardView({ content }: { content: BattlecardContent
   const isAi = (section: string) => content.aiSections.includes(section);
   const updated = content.updatedAt || content.generatedAt;
   return (
-    <div id="battlecard-print">
+    <Box id="battlecard-print">
       {content.version !== undefined && (
-        <p className="text-sm text-slate-500">
+        <Typography variant="body2" color="text.secondary">
           Version {content.version}
           {updated ? ` · Last updated ${new Date(updated).toLocaleString()}` : ""}
-        </p>
+        </Typography>
       )}
-      <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-relaxed text-amber-800">
-        Sections marked AI-generated come from the latest OpenAI analysis —
-        verify them before a sales call. Everything else is verified data
-        from scans.
-      </p>
+      <Alert severity="warning" sx={{ mt: 2 }}>
+        Sections marked AI-generated come from the latest OpenAI analysis — verify them before a sales call.
+        Everything else is verified data from scans.
+      </Alert>
 
-      <div className="mt-6">
+      <Box sx={{ mt: 3 }}>
         <Section title="Overview">
-          <p className="text-sm leading-relaxed text-slate-700">{content.overview}</p>
+          <Typography variant="body2" sx={{ lineHeight: 1.7 }}>{content.overview}</Typography>
         </Section>
 
         <Section title="Positioning" ai={isAi("positioning")}>
-          <p className="text-sm leading-relaxed text-slate-700">{content.positioning}</p>
+          <Typography variant="body2" sx={{ lineHeight: 1.7 }}>{content.positioning}</Typography>
         </Section>
 
         <Section title="Pricing">
           {content.pricing.length === 0 ? (
-            <p className="text-sm text-slate-500">No pricing data captured yet — scan the competitor first.</p>
+            <Typography variant="body2" color="text.secondary">No pricing data captured yet — scan the competitor first.</Typography>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[420px] text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
-                    <th className="pb-2 pr-3 font-medium">Plan</th>
-                    <th className="pb-2 pr-3 font-medium">Price</th>
-                    <th className="pb-2 font-medium">Billing</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700 }}>Plan</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Price</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Billing</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
                   {content.pricing.map((p) => (
-                    <tr key={p.name} className="border-b border-slate-100 last:border-0">
-                      <td className="py-2 pr-3 font-medium text-slate-900">{p.name}</td>
-                      <td className="py-2 pr-3 text-slate-700">{p.raw}</td>
-                      <td className="py-2 text-slate-600">{p.interval}</td>
-                    </tr>
+                    <TableRow key={p.name}>
+                      <TableCell sx={{ fontWeight: 600 }}>{p.name}</TableCell>
+                      <TableCell>{p.raw}</TableCell>
+                      <TableCell>{p.interval}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </TableBody>
+              </Table>
+            </TableContainer>
           )}
           {content.pricingSourceUrl && (
-            <p className="mt-2 text-sm text-slate-500">
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
               Source:{" "}
-              <a href={content.pricingSourceUrl} target="_blank" rel="noreferrer" className="font-medium text-indigo-600 hover:underline">
+              <Link href={content.pricingSourceUrl} target="_blank" rel="noreferrer" sx={{ fontWeight: 600 }}>
                 {content.pricingSourceUrl}
-              </a>
+              </Link>
               {content.pricingSnapshotDate ? ` · captured ${new Date(content.pricingSnapshotDate).toLocaleString()}` : ""}
-            </p>
+            </Typography>
           )}
         </Section>
 
         <Section title="Product features">
           {content.features.length === 0 ? (
-            <p className="text-sm text-slate-500">No changelog entries captured yet.</p>
+            <Typography variant="body2" color="text.secondary">No changelog entries captured yet.</Typography>
           ) : (
-            <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-slate-700">
+            <Box component="ul" sx={{ m: 0, pl: 2.5, "& li": { mb: 0.75, lineHeight: 1.6 } }}>
               {content.features.map((f, i) => (
-                <li key={i}>
+                <Typography key={i} component="li" variant="body2">
                   {f.title}
-                  {f.date ? <span className="text-slate-500"> ({f.date})</span> : null}
-                </li>
+                  {f.date ? <Typography component="span" color="text.secondary"> ({f.date})</Typography> : null}
+                </Typography>
               ))}
-            </ul>
+            </Box>
           )}
         </Section>
 
@@ -151,36 +165,38 @@ export default function BattlecardView({ content }: { content: BattlecardContent
 
         <Section title="Recent changes">
           {content.recentChanges.length === 0 ? (
-            <p className="text-sm text-slate-500">No changes detected yet.</p>
+            <Typography variant="body2" color="text.secondary">No changes detected yet.</Typography>
           ) : (
-            <ul className="space-y-2.5">
+            <Box component="ul" sx={{ m: 0, p: 0, listStyle: "none", "& li": { mb: 1.5 } }}>
               {content.recentChanges.map((c, i) => (
-                <li key={i} className="text-sm leading-relaxed text-slate-700">
+                <Typography key={i} component="li" variant="body2" sx={{ lineHeight: 1.6 }}>
                   <Badge tone={c.significance === "high" ? "red" : c.significance === "medium" ? "amber" : "neutral"}>
                     {categoryLabel(c.category)}
                   </Badge>{" "}
                   {sourceLabelFor(c.category)}, {c.title}{" "}
-                  <span className="text-slate-500">({new Date(c.detectedAt).toLocaleString()})</span>{" "}
-                  <a href={c.sourceUrl} target="_blank" rel="noreferrer" className="font-medium text-indigo-600 hover:underline">
+                  <Typography component="span" color="text.secondary">({new Date(c.detectedAt).toLocaleString()})</Typography>{" "}
+                  <Link href={c.sourceUrl} target="_blank" rel="noreferrer" sx={{ fontWeight: 600 }}>
                     Source ↗
-                  </a>
-                </li>
+                  </Link>
+                </Typography>
               ))}
-            </ul>
+            </Box>
           )}
         </Section>
 
         <Section title="Customer complaints">
           {content.complaints.length === 0 ? (
-            <p className="text-sm text-slate-500">No negative reviews (2 stars or below) in the latest snapshot.</p>
+            <Typography variant="body2" color="text.secondary">No negative reviews (2 stars or below) in the latest snapshot.</Typography>
           ) : (
-            <ul className="space-y-2">
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
               {content.complaints.map((c, i) => (
-                <li key={i} className="rounded-lg border border-red-100 bg-red-50 p-3 text-sm leading-relaxed text-red-800">
-                  “{c.text}”{c.rating !== null ? ` — ${c.rating}/5` : ""}
-                </li>
+                <Paper key={i} elevation={0} sx={{ p: 1.5, background: "rgba(220,38,38,0.06)", border: "1px solid rgba(220,38,38,0.15)" }}>
+                  <Typography variant="body2" sx={{ lineHeight: 1.6, color: "#991b1b" }}>
+                    “{c.text}”{c.rating !== null ? ` — ${c.rating}/5` : ""}
+                  </Typography>
+                </Paper>
               ))}
-            </ul>
+            </Box>
           )}
         </Section>
 
@@ -193,18 +209,18 @@ export default function BattlecardView({ content }: { content: BattlecardContent
         </Section>
 
         <Section title="Sources">
-          <ul className="space-y-1.5 text-sm">
+          <Box component="ul" sx={{ m: 0, p: 0, listStyle: "none", "& li": { mb: 0.75 } }}>
             {content.sources.map((s) => (
-              <li key={s.url}>
-                <span className="font-medium text-slate-700">{s.label}:</span>{" "}
-                <a href={s.url} target="_blank" rel="noreferrer" className="break-all font-medium text-indigo-600 hover:underline">
+              <Typography key={s.url} component="li" variant="body2">
+                <Typography component="span" sx={{ fontWeight: 600 }}>{s.label}:</Typography>{" "}
+                <Link href={s.url} target="_blank" rel="noreferrer" sx={{ fontWeight: 600, wordBreak: "break-all" }}>
                   {s.url}
-                </a>
-              </li>
+                </Link>
+              </Typography>
             ))}
-          </ul>
+          </Box>
         </Section>
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

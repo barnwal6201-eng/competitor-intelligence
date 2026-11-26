@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import Alert from "@mui/material/Alert";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import Box from "@mui/material/Box";
+import CircularProgress from "@mui/material/CircularProgress";
 import CompetitorForm from "../../CompetitorForm";
 import { getCompetitor, updateCompetitor } from "@/services/competitors";
 import { BackLink, Card, PageHeader } from "@/components/ui";
@@ -44,50 +47,54 @@ export default function EditCompetitorPage() {
 
   if (loadError) {
     return (
-      <div>
-        <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{loadError}</p>
-        <BackLink href="/competitors">
-          <ArrowLeft className="h-4 w-4" /> Back to competitors
-        </BackLink>
-      </div>
+      <Box>
+        <Alert severity="error">{loadError}</Alert>
+        <Box sx={{ mt: 2 }}>
+          <BackLink href="/competitors">
+            <ArrowBackIcon sx={{ fontSize: 16 }} /> Back to competitors
+          </BackLink>
+        </Box>
+      </Box>
     );
   }
   if (!competitor) {
     return (
-      <p className="flex items-center gap-2 py-16 text-slate-600">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading competitor…
-      </p>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 8, color: "text.secondary" }}>
+        <CircularProgress size={18} /> Loading competitor…
+      </Box>
     );
   }
 
   return (
-    <div>
+    <Box>
       <PageHeader
         eyebrow={
           <BackLink href="/competitors">
-            <ArrowLeft className="h-4 w-4" /> Competitors
+            <ArrowBackIcon sx={{ fontSize: 16 }} /> Competitors
           </BackLink>
         }
         title={`Edit ${competitor.companyName}`}
         description="Changes are saved under your organization only."
       />
-      <Card className="mt-6 max-w-3xl p-6 sm:p-8">
-        <CompetitorForm
-          defaultValues={{
-            companyName: competitor.companyName,
-            websiteUrl: competitor.websiteUrl,
-            pricingPageUrl: competitor.pricingPageUrl,
-            changelogUrl: competitor.changelogUrl,
-            careersPageUrl: competitor.careersPageUrl,
-            reviewSourceUrl: competitor.reviewSourceUrl,
-            monitoringFrequency: competitor.monitoringFrequency,
-            isMonitoringEnabled: competitor.isMonitoringEnabled,
-          }}
-          submitLabel="Save changes"
-          serverError={serverError}
-          onSubmit={onSubmit}
-        />
+      <Card sx={{ mt: 3, maxWidth: 768 }} disablePadding>
+        <Box sx={{ p: { xs: 2.5, sm: 4 } }}>
+          <CompetitorForm
+            defaultValues={{
+              companyName: competitor.companyName,
+              websiteUrl: competitor.websiteUrl,
+              pricingPageUrl: competitor.pricingPageUrl,
+              changelogUrl: competitor.changelogUrl,
+              careersPageUrl: competitor.careersPageUrl,
+              reviewSourceUrl: competitor.reviewSourceUrl,
+              monitoringFrequency: competitor.monitoringFrequency,
+              isMonitoringEnabled: competitor.isMonitoringEnabled,
+            }}
+            submitLabel="Save changes"
+            serverError={serverError}
+            onSubmit={onSubmit}
+          />
+        </Box>
       </Card>
-    </div>
+    </Box>
   );
 }
