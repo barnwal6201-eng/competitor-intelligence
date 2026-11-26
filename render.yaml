@@ -162,7 +162,14 @@ services:
   # --- Redis (BullMQ queue) ----------------------------------------------
   # BullMQ requires noeviction: if Redis evicted queued jobs under memory
   # pressure, scheduled scans would silently disappear.
+  # Render requires an IP allow list on Redis services in a Blueprint.
+  # Render's own services have no fixed outbound IPs on the free tier,
+  # so 0.0.0.0/0 is used here — access is still protected by the
+  # auto-generated Redis password in the connection string.
   - type: keyvalue
     name: competitor-intelligence-redis
     plan: free
     maxmemoryPolicy: noeviction
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: Allow Render services to connect (password-protected)
