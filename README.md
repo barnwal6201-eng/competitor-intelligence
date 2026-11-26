@@ -325,60 +325,6 @@ a removed job, a removed changelog entry, and a new ordinary review are
   Phase 11 (test suite, security pass, deployment) is the final phase;
   see its section at the end of this file.
 
-## How to explain Phase 2 in an internship review
-
-- "Registering creates both a User and an Organization. The first user is the
-  organization owner, and every later record is isolated by `organizationId`."
-- "Passwords are hashed with bcryptjs. The hash is `select: false`, so it is
-  never returned by accident."
-- "Login sets a JWT in an HTTP-only cookie — JavaScript cannot read it, so a
-  cross-site script cannot steal the token."
-- "Protected routes check the token twice: Next.js middleware/layout checks
-  the cookie is present, and the backend `requireAuth` middleware verifies
-  the token and reloads the user from the database."
-- "CORS allows only the frontend origin, with `credentials: true`, so the
-  cookie travels from the frontend to the API."
-
-## How to explain Phase 3 in an internship review
-
-- "Every competitor query filters by `organizationId`, so organizations can
-  never see each other's data — a cross-organization request gets the same
-  404 as a missing record, so it does not even leak that the record exists."
-- "The website is unique per organization, not globally — two different
-  companies can both track Asana, but one organization cannot add it twice."
-- "Validation runs twice: Zod on the frontend form for instant feedback, and
-  Zod + Mongoose validators on the backend, because the frontend can never
-  be trusted on its own."
-- "Clearing an optional URL on edit removes the field with `$unset`, instead
-  of leaving the old value in place."
-
-## How to explain Phase 4 in an internship review
-
-- "Each source has its own scraper — pricing, changelog, careers, reviews —
-  but they share one fetcher, so SSRF protection and robots.txt are enforced
-  in exactly one place instead of four."
-- "Scrapers never assume a site's HTML layout: the pricing scraper looks for
-  price-like text and the nearest heading, so it works on unfamiliar pages
-  and degrades to reporting the prices it found instead of crashing."
-- "Every snapshot is hashed. An unchanged page is not stored again — that
-  hash comparison is what Phase 5's change detection is built on."
-- "The scan runs synchronously in the API request in this phase; Phase 9
-  moves it into Redis + BullMQ background jobs, as the PRD requires."
-
-## How to explain Phase 5 in an internship review
-
-- "Change detection is a pure function: it takes the previous snapshot's
-  extracted data and the new snapshot's, and returns a list of changes.
-  No database, no network — so it is unit-testable on its own."
-- "Matching is by identity, not by position: a plan is matched by its name,
-  a job by title plus location, a review by its text. A page that only
-  reordered its items reports no change."
-- "The first scan is a baseline, so it reports zero changes, and an
-  unchanged page is never stored, so it can never report a change either."
-- "Significance is a fixed rule — price increase, removed plan, and negative
-  review are high — because a rule is explainable; Phase 6 adds AI judgment
-  on top of it instead of replacing it."
-
 ## AI analysis API (Phase 6)
 
 | Method & path | Result |
@@ -421,21 +367,6 @@ not automatic after a scan, because each run calls the AI API, so the user decid
    already analysed instead of spending credits twice.
 4. Earlier analyses stay listed under “Previous analyses” — click one to
    read it again.
-
-## How to explain Phase 6 in an internship review
-
-- "The AI only ever sees the detected changes — the prompt lists them and
-  nothing else, and tells the model never to invent a price, a feature, or
-  a date that is not in the list."
-- "The model must return structured JSON, and the backend validates it
-  with Zod before saving. A response in the wrong shape is rejected, not
-  stored half-broken."
-- "Verified facts and AI interpretation stay separate: the analysis stores
-  the source changes next to the AI text, and the UI labels the whole
-  thing AI-generated so nobody mistakes it for scraped data."
-- "Analysis is manual because it costs money — each run uses Groq
-  credits, so the user decides when to spend them. Phase 9 automates it
-  as a background job."
 
 ## Phase 7: Battlecards (sales-ready pages per competitor)
 
@@ -485,16 +416,6 @@ analysis; HTTP: generate 201 then 409, edit → v2 with the old version
 frozen, regenerate → v3 picking up a new change, verified fields not
 editable, cross-org 404, unauthenticated 401).
 
-## How to explain Phase 7 in an internship review
-
-- "A battlecard is assembled from data we already verified — snapshots,
-  detected changes, and the last AI analysis. Nothing on it is typed in
-  or invented."
-- "Verified sections are read-only. If sales wants the pricing line to
-  change, they rescan — they can't type a fake price into the card."
-- "Every save is a new version and the old one is frozen, so you can
-  always prove what the battlecard said on the day of a call."
-
 ## Phase 8: Dashboard and analytics (the home page, finished)
 
 The dashboard is no longer a status page — it is a real overview of the
@@ -528,14 +449,6 @@ buckets including zero days, 7-day windows excluding a 10-day-old
 change, top-competitor order, price-moves-only list, scan-health
 statuses, cross-org isolation, an empty organization returning honest
 zeros, unauthenticated 401).
-
-## How to explain Phase 8 in an internship review
-
-- "The dashboard is one aggregation endpoint. Every card and chart on
-  the page is a MongoDB count or group-by over the user's own data —
-  there is no mock data anywhere in the app."
-- "The 14-day chart fills quiet days with zero instead of hiding them,
-  so a flat week reads as a flat week, not as missing data."
 
 ## Phase 9: Background jobs with Redis + BullMQ (finished)
 
@@ -603,20 +516,6 @@ set `REDIS_URL` in `backend/.env` (see `.env.example`), then
 in `frontend/`. For a separate worker: set
 `SCAN_WORKER_IN_PROCESS=false` on the API server and run
 `npm run worker` in a third terminal.
-
-## How to explain Phase 9 in an internship review
-
-- "The API never scrapes a page directly any more — it enqueues a
-  BullMQ job and returns 202, and a worker does the scan. That is
-  what lets the same code run scheduled scans every hour without
-  anyone pressing a button."
-- "Redis is a cache/queue, not the source of truth: every job also
-  has a ScanJob record in MongoDB, so the history survives a Redis
-  restart, and if Redis is down the scan falls back to running
-  synchronously instead of failing."
-- "A repeatable job is created per competitor from its
-  monitoringFrequency, and changing the frequency or pausing removes
-  and re-creates it — so a competitor can never have two schedules."
 
 ## Phase 12: Full UI redesign (finished)
 
