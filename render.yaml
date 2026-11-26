@@ -5,7 +5,7 @@
 # account creation here):
 #   1. Push this repo to GitHub (Render deploys from a connected repo).
 #   2. Render dashboard → New → Blueprint → connect the repo.
-#      Render reads this file and creates all four services below.
+#      Render reads this file and creates all three services below.
 #   3. Render prompts for every secret marked `sync: false` — paste the
 #      real values there (dashboard only). NOTHING secret is in this file.
 #   4. The frontend's NEXT_PUBLIC_API_URL is wired automatically from
@@ -18,8 +18,12 @@
 # Services created:
 #   competitor-intelligence-frontend  Node web service  (Next.js, port from $PORT)
 #   competitor-intelligence-api       Node web service  (Express API, port from $PORT)
-#   competitor-intelligence-worker    Node background worker (BullMQ scan worker)
 #   competitor-intelligence-redis     free Redis Key Value (BullMQ queue backend)
+#
+# NOTE (free tier): Render Background Workers are NOT available on the
+# free plan, so there is no separate worker service. The API runs the
+# BullMQ scan worker in-process instead (SCAN_WORKER_IN_PROCESS=true
+# below) - the same mode local `npm run dev` uses.
 #
 # Plans are all free tier. Render free web services sleep after ~15 min of
 # inactivity (first request after sleep is slow); free Redis has limits —
@@ -65,7 +69,7 @@ services:
       # The API must NOT run the scan worker in-process in production —
       # the separate worker service below does that job.
       - key: SCAN_WORKER_IN_PROCESS
-        value: "false"
+        value: "true"
       # Render injects PORT automatically; the backend listens on it
       # (default 5000 locally). Do not set PORT here.
       # FRONTEND_URL: pre-filled with the frontend service's expected
@@ -105,53 +109,6 @@ services:
       - key: SALESFORCE_REDIRECT_URI
         sync: false
       # Non-secret settings (safe to keep as plain values).
-      - key: OPENAI_MODEL
-        value: openai/gpt-oss-120b
-      - key: SCAN_WORKER_CONCURRENCY
-        value: "2"
-      - key: SALESFORCE_LOGIN_URL
-        value: https://login.salesforce.com
-
-  # --- Scan worker -------------------------------------------------------
-  - type: worker
-    name: competitor-intelligence-worker
-    runtime: node
-    plan: free
-    rootDir: backend
-    buildCommand: npm install && npm run build
-    startCommand: node dist/worker.js
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: SCAN_WORKER_IN_PROCESS
-        value: "false"
-      - key: FRONTEND_URL
-        value: https://competitor-intelligence-frontend.onrender.com
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: competitor-intelligence-redis
-          property: connectionString
-      - key: MONGODB_URI
-        sync: false
-      - key: JWT_SECRET
-        sync: false
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: INTEGRATION_ENCRYPTION_KEY
-        sync: false
-      - key: NOTION_CLIENT_ID
-        sync: false
-      - key: NOTION_CLIENT_SECRET
-        sync: false
-      - key: NOTION_REDIRECT_URI
-        sync: false
-      - key: SALESFORCE_CLIENT_ID
-        sync: false
-      - key: SALESFORCE_CLIENT_SECRET
-        sync: false
-      - key: SALESFORCE_REDIRECT_URI
-        sync: false
       - key: OPENAI_MODEL
         value: openai/gpt-oss-120b
       - key: SCAN_WORKER_CONCURRENCY
