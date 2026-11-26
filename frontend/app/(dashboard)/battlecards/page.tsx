@@ -18,7 +18,7 @@ import { listCompetitors } from "@/services/competitors";
 import { generateBattlecard, listBattlecards } from "@/services/battlecards";
 import { Badge, EmptyState, PageHeader } from "@/components/ui";
 import { motion } from "framer-motion";
-import { fadeUp, staggerParent } from "@/components/Motion";
+import { fadeUp, staggerParent } from "@/components/motion";
 import type { BattlecardListItem, Competitor } from "@/types";
 
 // Phase 7: the battlecards list — every competitor with its battlecard

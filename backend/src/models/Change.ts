@@ -16,7 +16,7 @@ import type { SnapshotSourceType } from "./Snapshot";
 // Significance is a fixed rule, not a guess: a price increase, a removed
 // plan, and a negative review are "high"; a price decrease, a new plan,
 // and a new changelog entry are "medium"; everything else is "low".
-// Phase 6 (OpenAI) may refine this; Phase 5 keeps it deterministic and
+// Phase 6 (Groq) may refine this; Phase 5 keeps it deterministic and
 // explainable.
 
 export type ChangeCategory =

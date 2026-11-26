@@ -1,5 +1,5 @@
 // Phase 10: a thin Notion client — plain fetch, no extra SDK dependency
-// (same approach as the Phase 6 OpenAI client). The base URL is
+// (same approach as the Phase 6 AI client). The base URL is
 // overridable via NOTION_API_BASE_URL so tests can point it at a local
 // mock server instead of api.notion.com; in production it is always the
 // real Notion API. Every call takes an injectable fetch so tests can

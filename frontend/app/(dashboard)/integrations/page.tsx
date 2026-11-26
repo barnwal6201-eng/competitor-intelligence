@@ -14,7 +14,7 @@ import {
   disconnectIntegration,
   getIntegrationAuthorizeUrl,
   listIntegrations,
-} from "@/services/integration";
+} from "@/services/integrations";
 import { Badge, EmptyState, PageHeader } from "@/components/ui";
 import type { IntegrationInfo, IntegrationProvider } from "@/types";
 

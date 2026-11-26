@@ -30,7 +30,7 @@ import { analyzeCompetitor, listAnalyses } from "@/services/analysis";
 import ChangeCard, { categoryLabel } from "@/components/ChangeCard";
 import { Badge, EmptyState, BackLink, PageHeader } from "@/components/ui";
 import { motion } from "framer-motion";
-import { fadeUp, staggerParent } from "@/components/Motion";
+import { fadeUp, staggerParent } from "@/components/motion";
 import type { Analysis, ChangeEvent, Competitor, ScanJob, ScanSummary, Snapshot } from "@/types";
 
 function sourceLabel(type: Snapshot["sourceType"]): string {

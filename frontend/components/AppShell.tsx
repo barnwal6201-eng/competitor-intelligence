@@ -23,7 +23,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import RadarIcon from "@mui/icons-material/Radar";
 import StyleIcon from "@mui/icons-material/Style";
 import { motion } from "framer-motion";
-import { FloatingOrbs, PageTransition } from "@/components/Motion";
+import { FloatingOrbs, PageTransition } from "@/components/motion";
 import { getCurrentUser, logoutUser } from "@/services/auth";
 import type { AuthUser } from "@/types";
 

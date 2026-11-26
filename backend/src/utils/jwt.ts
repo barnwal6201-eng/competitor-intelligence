@@ -22,12 +22,22 @@ export function setAuthCookie(res: Response, token: string): void {
   res.cookie(AUTH_COOKIE, token, {
     httpOnly: true, // JavaScript in the browser cannot read it (PRD section 6).
     secure: env.isProduction, // HTTPS only in production; localhost dev is HTTP.
-    sameSite: "lax",
+    // In production the frontend (Vercel) and the API (Render) are on
+    // different sites, so the cookie must be SameSite=None to travel with
+    // cross-site fetch calls; in development both run on localhost, where
+    // Lax is enough (and None would need Secure + HTTPS).
+    sameSite: env.isProduction ? "none" : "lax",
     maxAge: env.jwtExpiresInDays * 24 * 60 * 60 * 1000,
     path: "/",
   });
 }
 
 export function clearAuthCookie(res: Response): void {
-  res.clearCookie(AUTH_COOKIE, { httpOnly: true, sameSite: "lax", path: "/" });
+  // The flags must match setAuthCookie, or the browser keeps the cookie.
+  res.clearCookie(AUTH_COOKIE, {
+    httpOnly: true,
+    secure: env.isProduction,
+    sameSite: env.isProduction ? "none" : "lax",
+    path: "/",
+  });
 }

@@ -64,12 +64,12 @@ async function loadCompetitor(req: AuthRequest, res: Response) {
   return competitor;
 }
 
-// POST /api/competitors/:id/analyze — run OpenAI over this competitor's
+// POST /api/competitors/:id/analyze — run Groq over this competitor's
 // detected changes and store the structured analysis (PRD section 11).
 // Body: optional { changeIds: string[] } to analyse exactly those changes.
 // Without a body, it analyses the newest 20 changes no earlier analysis
 // has covered yet, so the same change is never analysed twice by default.
-// Analysis is manual, not automatic after a scan: each run costs OpenAI
+// Analysis is manual, not automatic after a scan: each run calls the Groq API
 // credits, so the user decides when to spend them (Phase 9 automates it).
 // Without OPENAI_API_KEY this returns 503 with setup instructions —
 // the app keeps working, only analysis is unavailable.
@@ -123,7 +123,7 @@ export async function analyzeCompetitor(req: AuthRequest, res: Response): Promis
     if (!hasOpenAIKey()) {
       res.status(503).json({
         error:
-          "OpenAI API key is not configured — add OPENAI_API_KEY to backend/.env and restart the backend. Get a key at platform.openai.com (API keys). Note: a ChatGPT subscription does not include API credits; the API needs its own billing.",
+          "Groq API key is not configured — add OPENAI_API_KEY to backend/.env and restart the backend. Get a free key at console.groq.com (API Keys). Note: a ChatGPT subscription does not include API credits — this project uses Groq's free tier instead.",
       });
       return;
     }

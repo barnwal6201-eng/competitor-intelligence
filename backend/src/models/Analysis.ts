@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 import type { ChangeCategory } from "./Change";
 
-// Phase 6: one Analysis is one OpenAI run over a set of detected changes
+// Phase 6: one Analysis is one Groq run over a set of detected changes
 // for one competitor (PRD section 11). It stores structured JSON —
 // summary, implications, strengths, weaknesses, suggested sales responses,
 // talking points — plus a confidence indicator and the model that produced

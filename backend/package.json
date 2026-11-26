@@ -6,7 +6,8 @@
     "dev": "tsx watch src/server.ts",
     "worker": "tsx src/worker.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "test": "tsx tests/run-all.ts"
   },
   "dependencies": {
     "axios": "^1.21.0",
@@ -17,6 +18,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
     "express-rate-limit": "^8.7.3",
+    "helmet": "^8.3.0",
     "ioredis": "^5.11.1",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.8.0",

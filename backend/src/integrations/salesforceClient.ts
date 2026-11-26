@@ -1,5 +1,5 @@
 // Phase 10: a thin Salesforce client — plain fetch, no SDK (same
-// approach as the Phase 6 OpenAI client and the Notion client). The
+// approach as the Phase 6 AI client and the Notion client). The
 // login host is overridable via SALESFORCE_LOGIN_URL so tests can point
 // it at a local mock server; in production it is login.salesforce.com
 // (or test.salesforce.com for a sandbox).

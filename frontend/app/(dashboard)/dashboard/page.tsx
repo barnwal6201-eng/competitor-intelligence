@@ -28,7 +28,7 @@ import { getDashboardOverview } from "@/services/dashboard";
 import { categoryLabel } from "@/components/ChangeCard";
 import { Badge, EmptyState, PageHeader } from "@/components/ui";
 import { motion } from "framer-motion";
-import { AnimatedNumber, fadeUp, staggerParent } from "@/components/Motion";
+import { AnimatedNumber, fadeUp, staggerParent } from "@/components/motion";
 import type { AuthUser, DashboardOverview } from "@/types";
 
 // Phase 12 restyle of the Phase 8 dashboard, MUI glass version. Every

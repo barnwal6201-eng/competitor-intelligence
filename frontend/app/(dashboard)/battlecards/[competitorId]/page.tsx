@@ -22,7 +22,7 @@ import {
   listIntegrations,
   pushBattlecardToNotion,
   pushBattlecardToSalesforce,
-} from "@/services/integration";
+} from "@/services/integrations";
 import type { IntegrationInfo } from "@/types";
 import {
   generateBattlecard,

@@ -10,7 +10,7 @@ import type { ChangeCategory } from "./Change";
 //     complaints (reviews rated 2 or below). These sections are read-only:
 //     editing them would mean faking data, so the only way they change is
 //     a new scan (or a Regenerate, which re-reads the latest data).
-//   AI data (from the latest OpenAI analysis, Phase 6):
+//   AI data (from the latest Groq analysis, Phase 6):
 //     strengths, weaknesses, talking points, objection handling, and the
 //     positioning line. These are editable, and the UI labels them
 //     AI-generated. With no analysis yet they stay empty with a note

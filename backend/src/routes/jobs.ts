@@ -1,25 +1,14 @@
 import { Router } from "express";
-import { getDbStatus } from "../config/db";
-import { checkRedis } from "../config/redis";
+import { requireAuth } from "../middleware/auth";
+import { getScanJob, listScanJobs } from "../controllers/jobController";
 
 const router = Router();
 
-// GET /api/health — the only endpoint in Phase 1.
-// Returns real status only: no fake competitors, metrics or analytics.
-// Phase 9 adds the Redis status, checked live with a ping (a cached
-// flag can go stale when a BullMQ connection drops and reconnects).
-router.get("/", async (_req, res) => {
-  const db = getDbStatus();
-  const redis = await checkRedis();
-  res.json({
-    status: "ok",
-    service: "competitor-intelligence-backend",
-    timestamp: new Date().toISOString(),
-    database: db.connected ? "connected" : "disconnected",
-    databaseNote: db.note,
-    redis: redis.connected ? "connected" : "disconnected",
-    redisNote: redis.note,
-  });
-});
+// Phase 9: scan-job status. Every endpoint requires a signed-in user
+// and is scoped to that user's organization.
+router.use(requireAuth);
+
+router.get("/", listScanJobs);
+router.get("/:jobId", getScanJob);
 
 export default router;

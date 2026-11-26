@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { type AxiosResponse } from "axios";
 import dns from "node:dns";
 import net from "node:net";
 import { ScrapeError } from "./types";
@@ -32,15 +32,43 @@ function isPrivateIp(ip: string): boolean {
   }
   if (net.isIP(ip) === 6) {
     const lower = ip.toLowerCase();
-    return (
-      lower === "::1" ||
-      lower.startsWith("fc") ||
-      lower.startsWith("fd") ||
+    // Loopback, in all its spellings: ::1 and 0:0:0:0:0:0:0:1.
+    if (lower === "::1" || lower === "::") return true;
+    const groups = lower.split(":");
+    if (groups.length > 1 && groups.slice(0, -1).every((g) => g === "" || /^0+$/.test(g)) && groups[groups.length - 1] === "1") {
+      return true;
+    }
+    if (lower.startsWith("fc") || lower.startsWith("fd")) return true;
+    if (
       lower.startsWith("fe8") ||
       lower.startsWith("fe9") ||
       lower.startsWith("fea") ||
       lower.startsWith("feb")
-    );
+    ) {
+      return true;
+    }
+    // IPv4-mapped IPv6, e.g. ::ffff:127.0.0.1 or ::ffff:7f00:1 — unwrap
+    // and check the embedded IPv4 address. Without this, a mapped
+    // loopback/private address would slip past the check above.
+    const mapped = lower.match(/^:*((?:0:)*)ffff:(.+)$/);
+    if (mapped) {
+      const tail = mapped[2];
+      if (net.isIP(tail) === 4) return isPrivateIp(tail);
+      const hexGroups = tail.split(":");
+      if (hexGroups.length === 2) {
+        const hi = parseInt(hexGroups[0], 16);
+        const lo = parseInt(hexGroups[1], 16);
+        if (!Number.isNaN(hi) && !Number.isNaN(lo)) {
+          return isPrivateIp(`${(hi >> 8) & 255}.${hi & 255}.${(lo >> 8) & 255}.${lo & 255}`);
+        }
+      }
+    }
+    // IPv4-compatible form ::127.0.0.1 (deprecated, but still parseable).
+    if (lower.startsWith("::")) {
+      const tail = lower.slice(2);
+      if (net.isIP(tail) === 4) return isPrivateIp(tail);
+    }
+    return false;
   }
   return false;
 }
@@ -57,7 +85,12 @@ async function assertPublicUrl(rawUrl: string): Promise<URL> {
   }
   if (process.env.ALLOW_PRIVATE_SCRAPE_URLS === "true") return url;
 
-  const host = url.hostname.toLowerCase();
+  // Node's WHATWG URL keeps the brackets on IPv6 literals AND normalises
+  // them (http://[::ffff:127.0.0.1]/ has hostname "[::ffff:7f00:1]").
+  // net.isIP() rejects the bracketed form, so strip the brackets first —
+  // without this, the IPv6 / IPv4-mapped checks in isPrivateIp below
+  // never run and every IPv6 literal falls through to a DNS lookup.
+  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
   if (host === "localhost" || host.endsWith(".localhost")) {
     throw new ScrapeError("Refused to scrape a private address (localhost)");
   }
@@ -135,6 +168,9 @@ export async function isAllowedByRobots(url: URL): Promise<boolean> {
         maxContentLength: 100 * 1024,
         headers: { "User-Agent": USER_AGENT },
         validateStatus: () => true,
+        // Do not follow redirects here either — a robots.txt redirect
+        // to an internal address must not be fetched.
+        maxRedirects: 0,
       });
       rules = res.status === 200 ? parseRobotsTxt(res.data) : { allow: [], disallow: [] };
     } catch {
@@ -159,35 +195,54 @@ export async function isAllowedByRobots(url: URL): Promise<boolean> {
 // --- fetching ---------------------------------------------------------------
 
 export async function fetchHtml(rawUrl: string): Promise<string> {
-  const url = await assertPublicUrl(rawUrl);
-  if (!(await isAllowedByRobots(url))) {
-    throw new ScrapeError(`Blocked by robots.txt: ${rawUrl}`, "blocked");
-  }
-  let html: string;
-  try {
-    const res = await axios.get<string>(url.toString(), {
-      timeout: FETCH_TIMEOUT_MS,
-      maxContentLength: MAX_BYTES,
-      headers: {
-        "User-Agent": USER_AGENT,
-        Accept: "text/html,application/xhtml+xml",
-      },
-      responseType: "text",
-      validateStatus: (s) => s >= 200 && s < 300,
-      // Do not follow redirects to a different host — a redirect to an
-      // internal address must not bypass the SSRF check above.
-      maxRedirects: 3,
-    });
-    html = res.data;
-  } catch (err) {
-    if (err instanceof ScrapeError) throw err;
-    if (axios.isAxiosError(err)) {
-      const status = err.response?.status;
-      throw new ScrapeError(
-        status ? `Page returned HTTP ${status}: ${rawUrl}` : `Could not fetch ${rawUrl}: ${err.message}`
-      );
+  // Redirects are followed by hand, one hop at a time, so every hop is
+  // re-validated by assertPublicUrl (SSRF check) and robots.txt — a
+  // public URL that redirects to a private address is refused, instead
+  // of silently fetched the way axios's built-in redirect following
+  // would. At most 3 redirects are followed.
+  let current = await assertPublicUrl(rawUrl);
+  let html = "";
+  for (let hop = 0; hop <= 3; hop++) {
+    if (!(await isAllowedByRobots(current))) {
+      throw new ScrapeError(`Blocked by robots.txt: ${current.toString()}`, "blocked");
     }
-    throw new ScrapeError(`Could not fetch ${rawUrl}`);
+    let res: AxiosResponse<string>;
+    try {
+      res = await axios.get<string>(current.toString(), {
+        timeout: FETCH_TIMEOUT_MS,
+        maxContentLength: MAX_BYTES,
+        headers: {
+          "User-Agent": USER_AGENT,
+          Accept: "text/html,application/xhtml+xml",
+        },
+        responseType: "text",
+        validateStatus: () => true,
+        maxRedirects: 0,
+      });
+    } catch (err) {
+      if (err instanceof ScrapeError) throw err;
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        throw new ScrapeError(
+          status ? `Page returned HTTP ${status}: ${current.toString()}` : `Could not fetch ${current.toString()}: ${err.message}`
+        );
+      }
+      throw new ScrapeError(`Could not fetch ${current.toString()}`);
+    }
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.location;
+      const target = Array.isArray(location) ? location[0] : location;
+      if (!target || hop === 3) {
+        throw new ScrapeError(`Page redirected too many times or without a target: ${rawUrl}`);
+      }
+      current = await assertPublicUrl(new URL(target, current.toString()).toString());
+      continue;
+    }
+    if (res.status < 200 || res.status >= 300) {
+      throw new ScrapeError(`Page returned HTTP ${res.status}: ${current.toString()}`);
+    }
+    html = res.data;
+    break;
   }
 
   // A nearly empty page usually means the content is rendered by JavaScript.
@@ -197,7 +252,7 @@ export async function fetchHtml(rawUrl: string): Promise<string> {
     const textLength = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().length;
     if (textLength < 200) {
       const { fetchWithPlaywright } = await import("./playwrightFetcher");
-      return fetchWithPlaywright(url.toString());
+      return fetchWithPlaywright(current.toString());
     }
   }
   return html;

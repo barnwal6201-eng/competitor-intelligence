@@ -7,6 +7,7 @@ import {
   deleteCompetitor,
 } from "../controllers/competitorController";
 import { requireAuth } from "../middleware/auth";
+import { expensiveLimiter } from "../middleware/rateLimits";
 import { triggerScan, listSnapshots, listScanJobs } from "../controllers/scanController";
 import { listCompetitorChanges } from "../controllers/changeController";
 import { analyzeCompetitor, listAnalyses, getAnalysis } from "../controllers/analysisController";
@@ -34,15 +35,17 @@ router.delete("/:id", deleteCompetitor);
 // Phase 4: manual scan trigger and snapshot history for one competitor.
 // Phase 9: POST /scan now enqueues a background job (202) instead of
 // scraping in the request; GET /scan-jobs lists its job history.
-router.post("/:id/scan", triggerScan);
+// Phase 11: scans are rate-limited per user — each one scrapes the web.
+router.post("/:id/scan", expensiveLimiter, triggerScan);
 router.get("/:id/scan-jobs", listScanJobs);
 router.get("/:id/snapshots", listSnapshots);
 
 // Phase 5: detected changes for one competitor.
 router.get("/:id/changes", listCompetitorChanges);
 
-// Phase 6: AI analysis of the detected changes (OpenAI, structured JSON).
-router.post("/:id/analyze", analyzeCompetitor);
+// Phase 6: AI analysis of the detected changes (Groq, structured JSON).
+// Phase 11: rate-limited per user — each run calls the AI API.
+router.post("/:id/analyze", expensiveLimiter, analyzeCompetitor);
 router.get("/:id/analyses", listAnalyses);
 router.get("/:id/analyses/:analysisId", getAnalysis);
 

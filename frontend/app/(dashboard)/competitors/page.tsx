@@ -27,7 +27,7 @@ import Typography from "@mui/material/Typography";
 import { listCompetitors, deleteCompetitor } from "@/services/competitors";
 import { Badge, EmptyState, PageHeader } from "@/components/ui";
 import { motion } from "framer-motion";
-import { fadeUp, staggerParent } from "@/components/Motion";
+import { fadeUp, staggerParent } from "@/components/motion";
 import type { Competitor } from "@/types";
 
 export default function CompetitorsPage() {

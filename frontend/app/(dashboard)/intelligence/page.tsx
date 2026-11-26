@@ -14,10 +14,10 @@ import {
   listIntegrations,
   pushChangeToNotion,
   pushChangeToSalesforce,
-} from "@/services/integration";
+} from "@/services/integrations";
 import ChangeCard from "@/components/ChangeCard";
 import { motion } from "framer-motion";
-import { staggerParent } from "@/components/Motion";
+import { staggerParent } from "@/components/motion";
 import { EmptyState, PageHeader } from "@/components/ui";
 import type { ChangeEvent, ChangeSignificance, IntegrationInfo, SnapshotSourceType } from "@/types";
 

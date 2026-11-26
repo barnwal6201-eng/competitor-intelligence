@@ -12,8 +12,16 @@
 // analyzer's job (see ai/analyzer.ts), so this file stays testable with a
 // stubbed fetch and needs no API key to import.
 
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const REQUEST_TIMEOUT_MS = 60_000;
+
+// The base URL is overridable for tests only (GROQ_API_BASE_URL): the
+// Phase 11 suite points it at a local mock server so analysis can be
+// tested end-to-end without a real Groq key or network. Production never
+// sets it — the default below is the real Groq endpoint.
+function getGroqUrl(): string {
+  const base = (process.env.GROQ_API_BASE_URL?.trim() || "https://api.groq.com/openai/v1").replace(/\/$/, "");
+  return `${base}/chat/completions`;
+}
 
 export interface ChatCompletionResult {
   content: string;
@@ -56,7 +64,7 @@ export async function completeJson(
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   let res: Response;
   try {
-    res = await fetchFn(GROQ_URL, {
+    res = await fetchFn(getGroqUrl(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

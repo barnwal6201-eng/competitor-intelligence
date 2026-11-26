@@ -10,7 +10,7 @@ import Typography from "@mui/material/Typography";
 import MuiLink from "@mui/material/Link";
 import { Badge } from "@/components/ui";
 import { motion } from "framer-motion";
-import { fadeUp } from "@/components/Motion";
+import { fadeUp } from "@/components/motion";
 import type { ChangeEvent } from "@/types";
 
 // Shared change card (Phase 5): one detected change, used by the
