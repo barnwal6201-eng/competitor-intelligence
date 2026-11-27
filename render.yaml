@@ -60,14 +60,19 @@ services:
     runtime: node
     plan: free
     rootDir: backend
-    buildCommand: npm install && npm run build
+    # --include=dev is REQUIRED: NODE_ENV=production (below) makes plain
+    # `npm install` skip devDependencies — and TypeScript + @types/node
+    # are devDependencies. Without them the build falls back to a global
+    # tsc with no Node types and fails on 'process' / 'console' /
+    # 'setTimeout'. With dev deps installed, the lockfile's TS 5.9.3 is used.
+    buildCommand: npm install --include=dev && npm run build
     startCommand: node dist/server.js
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
-      # The API must NOT run the scan worker in-process in production —
-      # the separate worker service below does that job.
+      # Background Workers are not on Render's free plan, so the API runs
+      # the scan worker in-process (same as local `npm run dev`).
       - key: SCAN_WORKER_IN_PROCESS
         value: "true"
       # Render injects PORT automatically; the backend listens on it
