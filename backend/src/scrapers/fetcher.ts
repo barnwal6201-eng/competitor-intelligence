@@ -251,7 +251,7 @@ export async function fetchHtml(rawUrl: string): Promise<string> {
   if (process.env.SCRAPER_USE_PLAYWRIGHT === "true") {
     const textLength = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().length;
     if (textLength < 200) {
-      const { fetchWithPlaywright } = await import("./playwrightFetcher");
+      const { fetchWithPlaywright } = await import("./playwrightFetcher.js");
       return fetchWithPlaywright(current.toString());
     }
   }
